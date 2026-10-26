@@ -192,7 +192,7 @@
             { id: 32, nome: "Lourenço Ferreira dos Santos Marques", cpf: "555.891.382-72", sus: "", telefone: "(96) 99187-0843", obs: "", checked: false, selected: false }
         ];
 
-        let pacientes = JSON.parse(localStorage.getItem('clinica_pacientes_v6')) || initialData;
+        let pacientes = JSON.parse(localStorage.getItem('clinica_pacientes_v7')) || initialData;
         let githubToken = localStorage.getItem('gh_token_proteses') || '';
         const GIST_DESC = "DB_PROTESES_CLINICA_WILSON";
 
@@ -207,7 +207,7 @@
         });
 
         function saveToStorage() {
-            localStorage.setItem('clinica_pacientes_v6', JSON.stringify(pacientes));
+            localStorage.setItem('clinica_pacientes_v7', JSON.stringify(pacientes));
             updateCounters();
             syncToGitHub();
         }
@@ -393,6 +393,7 @@
             document.getElementById('reorder-box').classList.add('hidden');
         }
 
+        // Correção de Exportação via Blob (Funciona em qualquer navegador e mobile sem falhas)
         function exportSelectedCSV() {
             const selecionados = pacientes.filter(p => p.selected);
             if (selecionados.length === 0) {
@@ -400,26 +401,28 @@
                 return;
             }
 
-            let csvContent = "data:text/csv;charset=utf-8,Status,Nome,CPF,SUS,Telefone,Observacoes\n";
+            let csvContent = "\uFEFFStatus,Nome,CPF,SUS,Telefone,Observacoes\n";
             selecionados.forEach(p => {
                 let row = [
                     p.checked ? "CONCLUIDO" : "PENDENTE",
-                    `"${p.nome}"`,
-                    `"${p.cpf || ''}"`,
-                    `"${p.sus || ''}"`,
-                    `"${p.telefone || ''}"`,
-                    `"${p.obs || ''}"`
+                    `"${(p.nome || '').replace(/"/g, '""')}"`,
+                    `"${(p.cpf || '').replace(/"/g, '""')}"`,
+                    `"${(p.sus || '').replace(/"/g, '""')}"`,
+                    `"${(p.telefone || '').replace(/"/g, '""')}"`,
+                    `"${(p.obs || '').replace(/"/g, '""')}"`
                 ];
                 csvContent += row.join(",") + "\n";
             });
 
-            const encodedUri = encodeURI(csvContent);
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
             const link = document.createElement("a");
-            link.setAttribute("href", encodedUri);
+            link.setAttribute("href", url);
             link.setAttribute("download", "pacientes_selecionados_protese.csv");
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
+            URL.revokeObjectURL(url);
         }
 
         function toggleSyncModal() {
@@ -502,7 +505,7 @@
                     const remoteData = JSON.parse(data.files["proteses_data.json"].content);
                     if (remoteData && Array.isArray(remoteData)) {
                         pacientes = remoteData;
-                        localStorage.setItem('clinica_pacientes_v6', JSON.stringify(pacientes));
+                        localStorage.setItem('clinica_pacientes_v7', JSON.stringify(pacientes));
                         updateCounters();
                         renderFila();
                         updateSyncStatus('synced', 'Sincronizado com Sucesso');
