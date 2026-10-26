@@ -2,48 +2,92 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Controle de Próteses - Clínico</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         body { font-family: 'Inter', sans-serif; }
+        @media screen and (max-width: 768px) {
+            input, select, textarea { font-size: 16px !important; }
+        }
     </style>
 </head>
 <body class="bg-slate-900 text-slate-100 min-h-screen flex flex-col">
 
     <!-- Header / Navbar -->
-    <header class="bg-slate-800 border-b border-slate-700 px-6 py-4 flex justify-between items-center shadow-md">
+    <header class="bg-slate-800 border-b border-slate-700 px-4 sm:px-6 py-4 flex flex-col sm:flex-row justify-between items-center gap-4 shadow-md">
         <div class="flex items-center space-x-3">
             <div class="bg-blue-600 p-2 rounded-lg text-white font-bold text-xl">🦷</div>
             <div>
-                <h1 class="text-lg font-bold tracking-tight">Gestão de Próteses Odontológicas</h1>
-                <p class="text-xs text-slate-400">Painel Otimizado para iPad & iPhone</p>
+                <h1 class="text-base sm:text-lg font-bold tracking-tight">Gestão de Próteses Odontológicas</h1>
+                <p class="text-xs text-slate-400">Otimizado para iPhone (Cadastro) & iPad (Fila)</p>
             </div>
         </div>
         <!-- Tabs Navigation -->
-        <div class="flex space-x-2 bg-slate-900 p-1 rounded-xl border border-slate-700">
-            <button onclick="switchTab('fila')" id="btn-fila" class="px-5 py-2 rounded-lg text-sm font-semibold transition bg-blue-600 text-white shadow">
-                Fila de Próteses (<span id="count-fila">0</span>)
+        <div class="flex space-x-2 bg-slate-900 p-1 rounded-xl border border-slate-700 w-full sm:w-auto justify-center">
+            <button onclick="switchTab('cadastro')" id="btn-cadastro" class="flex-1 sm:flex-none px-4 sm:px-5 py-2 rounded-lg text-xs sm:text-sm font-semibold transition bg-blue-600 text-white shadow">
+                ➕ Novo Cadastro
             </button>
-            <button onclick="switchTab('cadastro')" id="btn-cadastro" class="px-5 py-2 rounded-lg text-sm font-semibold transition text-slate-400 hover:text-white">
-                Base de Cadastros (<span id="count-cadastro">0</span>)
+            <button onclick="switchTab('fila')" id="btn-fila" class="flex-1 sm:flex-none px-4 sm:px-5 py-2 rounded-lg text-xs sm:text-sm font-semibold transition text-slate-400 hover:text-white">
+                📋 Fila de Próteses (<span id="count-fila">0</span>)
             </button>
         </div>
     </header>
 
     <!-- Main Container -->
-    <main class="flex-1 max-w-7xl w-full mx-auto p-6 space-y-6">
+    <main class="flex-1 max-w-5xl w-full mx-auto p-4 sm:p-6 space-y-6">
 
-        <!-- TAB 1: FILA DE PRÓTESES -->
-        <section id="tab-fila" class="space-y-4">
+        <!-- TAB 1: CADASTRO -->
+        <section id="tab-cadastro" class="space-y-4">
+            <div class="bg-slate-800 border border-slate-700 rounded-2xl p-5 sm:p-8 shadow-xl max-w-2xl mx-auto">
+                <div class="mb-6 border-b border-slate-700 pb-4">
+                    <h2 class="text-xl font-bold text-white" id="form-title">Cadastrar Novo Paciente</h2>
+                    <p class="text-xs sm:text-sm text-slate-400">Preencha os dados abaixo. O paciente irá direto para a Fila de Próteses.</p>
+                </div>
+                
+                <form id="form-cadastro" onsubmit="handleFormSubmit(event)" class="space-y-4">
+                    <input type="hidden" id="edit-id">
+                    <div>
+                        <label class="block text-xs font-medium text-slate-300 mb-1">Nome Completo *</label>
+                        <input type="text" id="input-nome" required placeholder="Nome do paciente" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 focus:outline-none focus:border-blue-500 text-slate-100">
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-medium text-slate-300 mb-1">CPF</label>
+                            <input type="text" id="input-cpf" placeholder="000.000.000-00" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 focus:outline-none focus:border-blue-500 text-slate-100">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-slate-300 mb-1">SUS (CNS)</label>
+                            <input type="text" id="input-sus" placeholder="Número do Cartão SUS" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 focus:outline-none focus:border-blue-500 text-slate-100">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-slate-300 mb-1">Telefone / Celular</label>
+                        <input type="text" id="input-tel" placeholder="(96) 90000-0000" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 focus:outline-none focus:border-blue-500 text-slate-100">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-slate-300 mb-1">Observações Clínicas</label>
+                        <textarea id="input-obs" rows="3" placeholder="Detalhes da prótese, arcada, etc." class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 focus:outline-none focus:border-blue-500 text-slate-100"></textarea>
+                    </div>
+
+                    <div class="flex items-center justify-end gap-3 pt-4">
+                        <button type="button" id="btn-cancel-edit" onclick="resetForm()" class="hidden px-5 py-3 rounded-xl text-sm font-medium bg-slate-700 hover:bg-slate-600 transition">Cancelar</button>
+                        <button type="submit" id="btn-submit-form" class="w-full sm:w-auto px-6 py-3 rounded-xl text-sm font-semibold bg-blue-600 hover:bg-blue-500 transition shadow-lg text-white">Salvar Paciente</button>
+                    </div>
+                </form>
+            </div>
+        </section>
+
+        <!-- TAB 2: FILA DE PRÓTESES -->
+        <section id="tab-fila" class="hidden space-y-4">
             <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-slate-800/50 p-4 rounded-2xl border border-slate-700">
                 <div>
-                    <h2 class="text-xl font-bold">Pacientes em Fila & Acompanhamento</h2>
-                    <p class="text-sm text-slate-400">Marque o check quando a prótese for enviada para confecção (o paciente irá para o final da lista).</p>
+                    <h2 class="text-xl font-bold">Fila de Próteses & Acompanhamento</h2>
+                    <p class="text-sm text-slate-400">Marque o check quando enviado (vão para o final). Clique em Editar para alterar dados ou excluir.</p>
                 </div>
                 <div class="flex items-center gap-3 w-full sm:w-auto">
-                    <input type="text" id="search-fila" oninput="renderFila()" placeholder="Buscar na fila..." class="bg-slate-900 border border-slate-700 rounded-xl px-4 py-2 text-sm focus:outline-none focus:border-blue-500 w-full sm:w-64">
+                    <input type="text" id="search-fila" oninput="renderFila()" placeholder="Buscar paciente..." class="bg-slate-900 border border-slate-700 rounded-xl px-4 py-2 text-sm focus:outline-none focus:border-blue-500 w-full sm:w-64">
                     <button onclick="exportCSV()" class="bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2 rounded-xl text-sm font-medium transition flex items-center gap-2 whitespace-nowrap shadow">
                         📥 Exportar CSV
                     </button>
@@ -61,7 +105,7 @@
                                 <th class="p-4">CPF</th>
                                 <th class="p-4">SUS (CNS)</th>
                                 <th class="p-4">Telefone</th>
-                                <th class="p-4">Observações</th>
+                                <th class="p-4">Ações (Editar / Excluir)</th>
                             </tr>
                         </thead>
                         <tbody id="tbody-fila" class="divide-y divide-slate-700/60 text-sm">
@@ -71,83 +115,10 @@
                 </div>
             </div>
         </section>
-
-        <!-- TAB 2: BASE DE CADASTROS -->
-        <section id="tab-cadastro" class="hidden space-y-4">
-            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-slate-800/50 p-4 rounded-2xl border border-slate-700">
-                <div>
-                    <h2 class="text-xl font-bold">Banco de Cadastros Gerais</h2>
-                    <p class="text-sm text-slate-400">Visualize ou adicione novos pacientes rapidamente pelo iPhone ou iPad.</p>
-                </div>
-                <div class="flex items-center gap-3 w-full sm:w-auto">
-                    <input type="text" id="search-cadastro" oninput="renderCadastro()" placeholder="Buscar paciente..." class="bg-slate-900 border border-slate-700 rounded-xl px-4 py-2 text-sm focus:outline-none focus:border-blue-500 w-full sm:w-64">
-                    <button onclick="openModal()" class="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-xl text-sm font-medium transition whitespace-nowrap shadow">
-                        + Novo Paciente
-                    </button>
-                </div>
-            </div>
-
-            <!-- Tabela Cadastro -->
-            <div class="bg-slate-800 rounded-2xl border border-slate-700 overflow-hidden shadow-xl">
-                <div class="overflow-x-auto">
-                    <table class="w-full text-left border-collapse">
-                        <thead>
-                            <tr class="bg-slate-900/80 border-b border-slate-700 text-xs font-semibold uppercase tracking-wider text-slate-400">
-                                <th class="p-4">Nome do Paciente</th>
-                                <th class="p-4">CPF</th>
-                                <th class="p-4">SUS (CNS)</th>
-                                <th class="p-4">Telefone</th>
-                                <th class="p-4">Ações</th>
-                            </tr>
-                        </thead>
-                        <tbody id="tbody-cadastro" class="divide-y divide-slate-700/60 text-sm">
-                            <!-- Inserido via JavaScript -->
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </section>
     </main>
-
-    <!-- Modal Novo Paciente -->
-    <div id="modal-paciente" class="fixed inset-0 bg-black/70 backdrop-blur-sm hidden items-center justify-center p-4 z-50">
-        <div class="bg-slate-800 border border-slate-700 rounded-2xl max-w-md w-full p-6 space-y-4 shadow-2xl">
-            <div class="flex justify-between items-center">
-                <h3 class="text-lg font-bold">Adicionar Novo Paciente</h3>
-                <button onclick="closeModal()" class="text-slate-400 hover:text-white">&times;</button>
-            </div>
-            <div class="space-y-3">
-                <div>
-                    <label class="block text-xs font-medium text-slate-400 mb-1">Nome Completo</label>
-                    <input type="text" id="input-nome" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-blue-500">
-                </div>
-                <div>
-                    <label class="block text-xs font-medium text-slate-400 mb-1">CPF</label>
-                    <input type="text" id="input-cpf" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-blue-500">
-                </div>
-                <div>
-                    <label class="block text-xs font-medium text-slate-400 mb-1">SUS (CNS)</label>
-                    <input type="text" id="input-sus" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-blue-500">
-                </div>
-                <div>
-                    <label class="block text-xs font-medium text-slate-400 mb-1">Telefone</label>
-                    <input type="text" id="input-tel" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-blue-500">
-                </div>
-                <div>
-                    <label class="block text-xs font-medium text-slate-400 mb-1">Observações</label>
-                    <input type="text" id="input-obs" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-blue-500">
-                </div>
-            </div>
-            <div class="flex justify-end space-x-3 pt-2">
-                <button onclick="closeModal()" class="px-4 py-2 rounded-xl text-sm font-medium bg-slate-700 hover:bg-slate-600 transition">Cancelar</button>
-                <button onclick="savePaciente()" class="px-4 py-2 rounded-xl text-sm font-medium bg-blue-600 hover:bg-blue-500 transition shadow">Salvar Paciente</button>
-            </div>
-        </div>
-    </div>
 
     <!-- JavaScript Application Logic -->
     <script>
-        // Dados iniciais extraídos das fotos do Drive
         const initialData = [
             { id: 1, nome: "Raimundo Oliveira Nobre", cpf: "119.864.332-34", sus: "", telefone: "(96) 99111-5707", obs: "", checked: false },
             { id: 2, nome: "Raimundo Felipe Marinho", cpf: "178.712.122-49", sus: "898003938282608", telefone: "(96) 99193-8970", obs: "", checked: false },
@@ -183,50 +154,44 @@
             { id: 32, nome: "Lourenço Ferreira dos Santos Marques", cpf: "555.891.382-72", sus: "", telefone: "(96) 99187-0843", obs: "", checked: false }
         ];
 
-        // Carrega do LocalStorage ou usa o padrão
-        let pacientes = JSON.parse(localStorage.getItem('clinica_pacientes')) || initialData;
+        // Usamos uma chave limpa v3 para garantir que o GitHub carregue os dados atualizados limpos
+        let pacientes = JSON.parse(localStorage.getItem('clinica_pacientes_v3')) || initialData;
 
         function saveToStorage() {
-            localStorage.setItem('clinica_pacientes', JSON.stringify(pacientes));
+            localStorage.setItem('clinica_pacientes_v3', JSON.stringify(pacientes));
             updateCounters();
         }
 
         function updateCounters() {
             document.getElementById('count-fila').innerText = pacientes.filter(p => !p.checked).length;
-            document.getElementById('count-cadastro').innerText = pacientes.length;
         }
 
-        // Alternar abas
         function switchTab(tab) {
-            const btnFila = document.getElementById('btn-fila');
             const btnCadastro = document.getElementById('btn-cadastro');
-            const tabFila = document.getElementById('tab-fila');
+            const btnFila = document.getElementById('btn-fila');
             const tabCadastro = document.getElementById('tab-cadastro');
+            const tabFila = document.getElementById('tab-fila');
 
-            if (tab === 'fila') {
-                btnFila.className = "px-5 py-2 rounded-lg text-sm font-semibold transition bg-blue-600 text-white shadow";
-                btnCadastro.className = "px-5 py-2 rounded-lg text-sm font-semibold transition text-slate-400 hover:text-white";
+            if (tab === 'cadastro') {
+                btnCadastro.className = "flex-1 sm:flex-none px-4 sm:px-5 py-2 rounded-lg text-xs sm:text-sm font-semibold transition bg-blue-600 text-white shadow";
+                btnFila.className = "flex-1 sm:flex-none px-4 sm:px-5 py-2 rounded-lg text-xs sm:text-sm font-semibold transition text-slate-400 hover:text-white";
+                tabCadastro.classList.remove('hidden');
+                tabFila.classList.add('hidden');
+            } else {
+                btnFila.className = "flex-1 sm:flex-none px-4 sm:px-5 py-2 rounded-lg text-xs sm:text-sm font-semibold transition bg-blue-600 text-white shadow";
+                btnCadastro.className = "flex-1 sm:flex-none px-4 sm:px-5 py-2 rounded-lg text-xs sm:text-sm font-semibold transition text-slate-400 hover:text-white";
                 tabFila.classList.remove('hidden');
                 tabCadastro.classList.add('hidden');
                 renderFila();
-            } else {
-                btnCadastro.className = "px-5 py-2 rounded-lg text-sm font-semibold transition bg-blue-600 text-white shadow";
-                btnFila.className = "px-5 py-2 rounded-lg text-sm font-semibold transition text-slate-400 hover:text-white";
-                tabCadastro.classList.remove('hidden');
-                tabFila.classList.add('hidden');
-                renderCadastro();
             }
         }
 
-        // Renderizar Fila (Não checados primeiro, checados vão para o final automaticamente)
         function renderFila() {
             const tbody = document.getElementById('tbody-fila');
             const query = document.getElementById('search-fila').value.toLowerCase();
             tbody.innerHTML = '';
 
-            // Ordenação: false (não concluídos) primeiro, true (concluídos) no final
             const sorted = [...pacientes].sort((a, b) => (a.checked === b.checked) ? 0 : a.checked ? 1 : -1);
-
             const filtered = sorted.filter(p => p.nome.toLowerCase().includes(query) || p.cpf.toLowerCase().includes(query));
 
             if (filtered.length === 0) {
@@ -245,42 +210,15 @@
                     <td class="p-4">${p.cpf || '-'}</td>
                     <td class="p-4">${p.sus || '-'}</td>
                     <td class="p-4">${p.telefone || '-'}</td>
-                    <td class="p-4"><input type="text" value="${p.obs || ''}" onchange="updateObs(${p.id}, this.value)" placeholder="Adicionar obs..." class="bg-slate-900/60 border border-slate-700 rounded px-2 py-1 text-xs w-full text-slate-200"></td>
-                `;
-                tbody.appendChild(tr);
-            });
-        }
-
-        // Renderizar Cadastro Geral
-        function renderCadastro() {
-            const tbody = document.getElementById('tbody-cadastro');
-            const query = document.getElementById('search-cadastro').value.toLowerCase();
-            tbody.innerHTML = '';
-
-            const filtered = pacientes.filter(p => p.nome.toLowerCase().includes(query) || p.cpf.toLowerCase().includes(query));
-
-            if (filtered.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="5" class="p-6 text-center text-slate-500">Nenhum paciente encontrado.</td></tr>`;
-                return;
-            }
-
-            filtered.forEach(p => {
-                const tr = document.createElement('tr');
-                tr.className = "border-b border-slate-700/60 hover:bg-slate-700/30 transition";
-                tr.innerHTML = `
-                    <td class="p-4 font-medium text-slate-100">${p.nome}</td>
-                    <td class="p-4">${p.cpf || '-'}</td>
-                    <td class="p-4">${p.sus || '-'}</td>
-                    <td class="p-4">${p.telefone || '-'}</td>
-                    <td class="p-4">
-                        <button onclick="deletePaciente(${p.id})" class="text-rose-400 hover:text-rose-300 text-xs font-semibold px-2.5 py-1 bg-rose-500/10 rounded-lg border border-rose-500/20">Excluir</button>
+                    <td class="p-4 flex items-center gap-2">
+                        <button onclick="editPaciente(${p.id})" class="px-3 py-1.5 bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 border border-blue-500/30 rounded-lg text-xs font-semibold transition">✏️ Editar</button>
+                        <button onclick="deletePaciente(${p.id})" class="px-3 py-1.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30 rounded-lg text-xs font-semibold transition">🗑️ Excluir</button>
                     </td>
                 `;
                 tbody.appendChild(tr);
             });
         }
 
-        // Ações de modificação
         function toggleCheck(id) {
             const p = pacientes.find(item => item.id === id);
             if (p) {
@@ -290,66 +228,76 @@
             }
         }
 
-        function updateObs(id, val) {
-            const p = pacientes.find(item => item.id === id);
-            if (p) {
-                p.obs = val;
-                saveToStorage();
+        function handleFormSubmit(event) {
+            event.preventDefault();
+            const editId = document.getElementById('edit-id').value;
+            const nome = document.getElementById('input-nome').value.trim();
+            
+            if (!nome) return;
+
+            if (editId) {
+                const p = pacientes.find(item => item.id == editId);
+                if (p) {
+                    p.nome = nome;
+                    p.cpf = document.getElementById('input-cpf').value.trim();
+                    p.sus = document.getElementById('input-sus').value.trim();
+                    p.telefone = document.getElementById('input-tel').value.trim();
+                    p.obs = document.getElementById('input-obs').value.trim();
+                }
+                alert('Paciente atualizado com sucesso!');
+            } else {
+                const novo = {
+                    id: Date.now(),
+                    nome: nome,
+                    cpf: document.getElementById('input-cpf').value.trim(),
+                    sus: document.getElementById('input-sus').value.trim(),
+                    telefone: document.getElementById('input-tel').value.trim(),
+                    obs: document.getElementById('input-obs').value.trim(),
+                    checked: false
+                };
+                pacientes.push(novo);
+                alert('Paciente cadastrado com sucesso!');
             }
+
+            saveToStorage();
+            resetForm();
+            switchTab('fila');
+        }
+
+        function editPaciente(id) {
+            const p = pacientes.find(item => item.id === id);
+            if (!p) return;
+
+            document.getElementById('edit-id').value = p.id;
+            document.getElementById('input-nome').value = p.nome;
+            document.getElementById('input-cpf').value = p.cpf || '';
+            document.getElementById('input-sus').value = p.sus || '';
+            document.getElementById('input-tel').value = p.telefone || '';
+            document.getElementById('input-obs').value = p.obs || '';
+
+            document.getElementById('form-title').innerText = "Editar Paciente";
+            document.getElementById('btn-submit-form').innerText = "Atualizar Paciente";
+            document.getElementById('btn-cancel-edit').classList.remove('hidden');
+
+            switchTab('cadastro');
+        }
+
+        function resetForm() {
+            document.getElementById('form-cadastro').reset();
+            document.getElementById('edit-id').value = '';
+            document.getElementById('form-title').innerText = "Cadastrar Novo Paciente";
+            document.getElementById('btn-submit-form').innerText = "Salvar Paciente";
+            document.getElementById('btn-cancel-edit').classList.add('hidden');
         }
 
         function deletePaciente(id) {
             if (confirm("Tem certeza que deseja excluir este paciente?")) {
                 pacientes = pacientes.filter(item => item.id !== id);
                 saveToStorage();
-                renderCadastro();
-                updateCounters();
+                renderFila();
             }
         }
 
-        // Modal Controls
-        function openModal() {
-            document.getElementById('modal-paciente').classList.remove('hidden');
-            document.getElementById('modal-paciente').classList.add('flex');
-        }
-
-        function closeModal() {
-            document.getElementById('modal-paciente').classList.add('hidden');
-            document.getElementById('modal-paciente').classList.remove('flex');
-            // limpar inputs
-            document.getElementById('input-nome').value = '';
-            document.getElementById('input-cpf').value = '';
-            document.getElementById('input-sus').value = '';
-            document.getElementById('input-tel').value = '';
-            document.getElementById('input-obs').value = '';
-        }
-
-        function savePaciente() {
-            const nome = document.getElementById('input-nome').value.trim();
-            if (!nome) {
-                alert('O nome do paciente é obrigatório.');
-                return;
-            }
-
-            const novo = {
-                id: Date.now(),
-                nome: nome,
-                cpf: document.getElementById('input-cpf').value.trim(),
-                sus: document.getElementById('input-sus').value.trim(),
-                telefone: document.getElementById('input-tel').value.trim(),
-                obs: document.getElementById('input-obs').value.trim(),
-                checked: false
-            };
-
-            pacientes.push(novo);
-            saveToStorage();
-            closeModal();
-            renderCadastro();
-            updateCounters();
-            alert('Paciente adicionado com sucesso!');
-        }
-
-        // Exportar CSV
         function exportCSV() {
             let csvContent = "data:text/csv;charset=utf-8,Status,Nome,CPF,SUS,Telefone,Observacoes\n";
             pacientes.forEach(p => {
@@ -373,9 +321,7 @@
             document.body.removeChild(link);
         }
 
-        // Inicializar contadores na primeira carga
         updateCounters();
-        renderFila();
     </script>
 </body>
 </html>
