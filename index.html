@@ -30,7 +30,7 @@
 
         <div class="flex items-center gap-3">
             <button onclick="toggleSyncModal()" class="px-3 py-1.5 bg-slate-700 hover:bg-slate-600 rounded-lg text-xs font-medium transition flex items-center gap-1.5 text-slate-300">
-                ⚙️ Configurar Nuvem
+                ⚙️ Configurar Token
             </button>
             <div class="flex space-x-1 bg-slate-900 p-1 rounded-xl border border-slate-700">
                 <button onclick="switchTab('cadastro')" id="btn-cadastro" class="px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold transition bg-blue-600 text-white shadow">
@@ -52,7 +52,7 @@
                 <div class="mb-6 border-b border-slate-700 pb-4 flex justify-between items-center">
                     <div>
                         <h2 class="text-xl font-bold text-white" id="form-title">Cadastrar Novo Paciente</h2>
-                        <p class="text-xs sm:text-sm text-slate-400">Preencha os dados abaixo. Sincroniza instantaneamente.</p>
+                        <p class="text-xs sm:text-sm text-slate-400">Preencha os dados abaixo. Sincroniza automaticamente.</p>
                     </div>
                     <div id="reorder-box" class="hidden flex items-center gap-1 bg-slate-900 p-1 rounded-lg border border-slate-700">
                         <button type="button" onclick="movePaciente(-1)" class="px-3 py-1 bg-slate-800 hover:bg-slate-700 rounded text-xs" title="Subir na fila">⬆️ Subir</button>
@@ -134,27 +134,23 @@
         </section>
     </main>
 
-    <!-- Modal Configuração GitHub Gist Sync -->
+    <!-- Modal Configuração Token GitHub -->
     <div id="modal-sync" class="fixed inset-0 bg-black/70 backdrop-blur-sm hidden items-center justify-center p-4 z-50">
         <div class="bg-slate-800 border border-slate-700 rounded-2xl max-w-md w-full p-6 space-y-4 shadow-2xl">
             <div class="flex justify-between items-center">
-                <h3 class="text-lg font-bold">Configurar Sincronização GitHub</h3>
+                <h3 class="text-lg font-bold">Configurar Sincronização</h3>
                 <button onclick="toggleSyncModal()" class="text-slate-400 hover:text-white">&times;</button>
             </div>
-            <p class="text-xs text-slate-400">Insira seu Personal Access Token do GitHub e o ID do Gist para sincronizar perfeitamente.</p>
+            <p class="text-xs text-slate-400">Insira apenas o seu **Token do GitHub** (mesmo padrão utilizado no seu app de finanças).</p>
             <div class="space-y-3">
                 <div>
-                    <label class="block text-xs font-medium text-slate-300 mb-1">GitHub Token (Gist scope)</label>
+                    <label class="block text-xs font-medium text-slate-300 mb-1">GitHub Personal Access Token</label>
                     <input type="password" id="sync-token" placeholder="ghp_xxxxxxxxxxxx" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-blue-500">
-                </div>
-                <div>
-                    <label class="block text-xs font-medium text-slate-300 mb-1">GitHub Gist ID</label>
-                    <input type="text" id="sync-gist-id" placeholder="xxxxxxxxxxxxxxxxxxxxxxxx" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-blue-500">
                 </div>
             </div>
             <div class="flex justify-end space-x-3 pt-2">
                 <button onclick="toggleSyncModal()" class="px-4 py-2 rounded-xl text-sm font-medium bg-slate-700 hover:bg-slate-600 transition">Cancelar</button>
-                <button onclick="saveSyncConfig()" class="px-4 py-2 rounded-xl text-sm font-medium bg-blue-600 hover:bg-blue-500 transition shadow">Salvar & Sincronizar Agora</button>
+                <button onclick="saveSyncConfig()" class="px-4 py-2 rounded-xl text-sm font-medium bg-blue-600 hover:bg-blue-500 transition shadow">Salvar & Sincronizar</button>
             </div>
         </div>
     </div>
@@ -196,23 +192,22 @@
             { id: 32, nome: "Lourenço Ferreira dos Santos Marques", cpf: "555.891.382-72", sus: "", telefone: "(96) 99187-0843", obs: "", checked: false, selected: false }
         ];
 
-        let pacientes = JSON.parse(localStorage.getItem('clinica_pacientes_v5')) || initialData;
-        let githubToken = localStorage.getItem('gh_token') || '';
-        let githubGistId = localStorage.getItem('gh_gist_id') || '';
+        let pacientes = JSON.parse(localStorage.getItem('clinica_pacientes_v6')) || initialData;
+        let githubToken = localStorage.getItem('gh_token_proteses') || '';
+        const GIST_DESC = "DB_PROTESES_CLINICA_WILSON";
 
-        // Ao iniciar, tenta baixar a versão mais atual da nuvem imediatamente
         window.addEventListener('DOMContentLoaded', () => {
             updateCounters();
             renderFila();
-            if (githubToken && githubGistId) {
-                syncFromGitHub(true); // Inicialização silenciosa
+            if (githubToken) {
+                syncFromGitHub(true);
             } else {
-                updateSyncStatus('local', 'Usando armazenamento local (Configure a nuvem)');
+                updateSyncStatus('local', 'Usando armazenamento local (Configure o token)');
             }
         });
 
         function saveToStorage() {
-            localStorage.setItem('clinica_pacientes_v5', JSON.stringify(pacientes));
+            localStorage.setItem('clinica_pacientes_v6', JSON.stringify(pacientes));
             updateCounters();
             syncToGitHub();
         }
@@ -432,23 +427,45 @@
             modal.classList.toggle('hidden');
             modal.classList.toggle('flex');
             document.getElementById('sync-token').value = githubToken;
-            document.getElementById('sync-gist-id').value = githubGistId;
         }
 
         function saveSyncConfig() {
             githubToken = document.getElementById('sync-token').value.trim();
-            githubGistId = document.getElementById('sync-gist-id').value.trim();
-            localStorage.setItem('gh_token', githubToken);
-            localStorage.setItem('gh_gist_id', githubGistId);
+            localStorage.setItem('gh_token_proteses', githubToken);
             toggleSyncModal();
             syncFromGitHub(false);
         }
 
+        async function findOrCreateGist() {
+            const res = await fetch('https://api.github.com/gists', {
+                headers: { 'Authorization': `token ${githubToken}` }
+            });
+            const gists = await res.json();
+            const existing = gists.find(g => g.description === GIST_DESC);
+            if (existing) return existing.id;
+
+            const createRes = await fetch('https://api.github.com/gists', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `token ${githubToken}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    description: GIST_DESC,
+                    public: false,
+                    files: { "proteses_data.json": { content: JSON.stringify(initialData) } }
+                })
+            });
+            const newGist = await createRes.json();
+            return newGist.id;
+        }
+
         async function syncToGitHub() {
-            if (!githubToken || !githubGistId) return;
+            if (!githubToken) return;
             updateSyncStatus('syncing', 'Sincronizando com nuvem...');
             try {
-                const res = await fetch(`https://api.github.com/gists/${githubGistId}`, {
+                const gistId = await findOrCreateGist();
+                const res = await fetch(`https://api.github.com/gists/${gistId}`, {
                     method: 'PATCH',
                     headers: {
                         'Authorization': `token ${githubToken}`,
@@ -456,7 +473,7 @@
                     },
                     body: JSON.stringify({
                         files: {
-                            "pacientes_proteses.json": {
+                            "proteses_data.json": {
                                 content: JSON.stringify(pacientes, null, 2)
                             }
                         }
@@ -473,18 +490,19 @@
         }
 
         async function syncFromGitHub(silent = false) {
-            if (!githubToken || !githubGistId) return;
+            if (!githubToken) return;
             if (!silent) updateSyncStatus('syncing', 'Baixando dados da nuvem...');
             try {
-                const res = await fetch(`https://api.github.com/gists/${githubGistId}`, {
+                const gistId = await findOrCreateGist();
+                const res = await fetch(`https://api.github.com/gists/${gistId}`, {
                     headers: { 'Authorization': `token ${githubToken}` }
                 });
                 const data = await res.json();
-                if (data.files && data.files["pacientes_proteses.json"]) {
-                    const remoteData = JSON.parse(data.files["pacientes_proteses.json"].content);
+                if (data.files && data.files["proteses_data.json"]) {
+                    const remoteData = JSON.parse(data.files["proteses_data.json"].content);
                     if (remoteData && Array.isArray(remoteData)) {
                         pacientes = remoteData;
-                        localStorage.setItem('clinica_pacientes_v5', JSON.stringify(pacientes));
+                        localStorage.setItem('clinica_pacientes_v6', JSON.stringify(pacientes));
                         updateCounters();
                         renderFila();
                         updateSyncStatus('synced', 'Sincronizado com Sucesso');
@@ -493,7 +511,7 @@
                 }
             } catch (e) {
                 updateSyncStatus('error', 'Erro ao carregar da nuvem');
-                if (!silent) alert('Erro ao conectar com o GitHub Gist.');
+                if (!silent) alert('Erro ao conectar com o GitHub.');
             }
         }
     </script>
