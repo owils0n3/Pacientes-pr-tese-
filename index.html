@@ -94,9 +94,14 @@
                         <textarea id="input-obs" rows="3" placeholder="Detalhes da prótese, arcada, etc." class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 focus:outline-none focus:border-blue-500 text-slate-100"></textarea>
                     </div>
 
-                    <div class="flex items-center justify-end gap-3 pt-4">
-                        <button type="button" id="btn-cancel-edit" onclick="resetForm()" class="hidden px-5 py-3 rounded-xl text-sm font-medium bg-slate-700 hover:bg-slate-600 transition">Cancelar</button>
-                        <button type="submit" id="btn-submit-form" class="w-full sm:w-auto px-6 py-3 rounded-xl text-sm font-semibold bg-blue-600 hover:bg-blue-500 transition shadow-lg text-white">Salvar Paciente</button>
+                    <div class="flex items-center justify-between pt-4">
+                        <!-- Botão de Excluir (Visível apenas na edição) -->
+                        <button type="button" id="btn-delete-edit" onclick="excluirPacienteEditando()" class="hidden px-4 py-3 rounded-xl text-sm font-medium bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30 transition">🗑️ Excluir Paciente</button>
+                        
+                        <div class="flex items-center gap-3 ml-auto">
+                            <button type="button" id="btn-cancel-edit" onclick="resetForm()" class="hidden px-5 py-3 rounded-xl text-sm font-medium bg-slate-700 hover:bg-slate-600 transition">Cancelar</button>
+                            <button type="submit" id="btn-submit-form" class="px-6 py-3 rounded-xl text-sm font-semibold bg-blue-600 hover:bg-blue-500 transition shadow-lg text-white">Salvar Paciente</button>
+                        </div>
                     </div>
                 </form>
             </div>
@@ -201,7 +206,7 @@
             { id: 32, nome: "Lourenço Ferreira dos Santos Marques", cpf: "555.891.382-72", sus: "", telefone: "(96) 99187-0843", obs: "", checked: false, selected: false }
         ];
 
-        let pacientes = JSON.parse(localStorage.getItem('clinica_pacientes_v8')) || initialData;
+        let pacientes = JSON.parse(localStorage.getItem('clinica_pacientes_v9')) || initialData;
         let githubToken = localStorage.getItem('gh_token_proteses') || '';
         const GIST_DESC = "DB_PROTESES_CLINICA_WILSON";
 
@@ -216,7 +221,7 @@
         });
 
         function saveToStorage() {
-            localStorage.setItem('clinica_pacientes_v8', JSON.stringify(pacientes));
+            localStorage.setItem('clinica_pacientes_v9', JSON.stringify(pacientes));
             updateCounters();
             syncToGitHub();
         }
@@ -367,7 +372,6 @@
             document.getElementById('input-tel').value = p.telefone || '';
             document.getElementById('input-obs').value = p.obs || '';
 
-            // Define a posição atual no input numérico
             const currentIndex = pacientes.findIndex(item => item.id === id) + 1;
             document.getElementById('input-posicao').value = currentIndex;
             document.getElementById('input-posicao').max = pacientes.length;
@@ -376,6 +380,7 @@
             document.getElementById('btn-submit-form').innerText = "Atualizar Paciente";
             document.getElementById('btn-cancel-edit').classList.remove('hidden');
             document.getElementById('reorder-group').classList.remove('hidden');
+            document.getElementById('btn-delete-edit').classList.remove('hidden');
 
             switchTab('cadastro');
         }
@@ -395,13 +400,25 @@
 
             const targetIndex = novaPosicaoInput - 1;
 
-            // Remove o item da posição atual e insere na nova posição
             const [itemMovido] = pacientes.splice(currentIndex, 1);
             pacientes.splice(targetIndex, 0, itemMovido);
 
             saveToStorage();
             alert(`Paciente movido para a posição ${novaPosicaoInput} com sucesso e sincronizado!`);
             switchTab('fila');
+        }
+
+        function excluirPacienteEditando() {
+            const editId = document.getElementById('edit-id').value;
+            if (!editId) return;
+
+            if (confirm("Tem certeza que deseja excluir este paciente?")) {
+                pacientes = pacientes.filter(item => item.id != editId);
+                saveToStorage();
+                resetForm();
+                switchTab('fila');
+                alert('Paciente excluído e sincronizado!');
+            }
         }
 
         function resetForm() {
@@ -411,6 +428,7 @@
             document.getElementById('btn-submit-form').innerText = "Salvar Paciente";
             document.getElementById('btn-cancel-edit').classList.add('hidden');
             document.getElementById('reorder-group').classList.add('hidden');
+            document.getElementById('btn-delete-edit').classList.add('hidden');
         }
 
         function exportSelectedCSV() {
@@ -524,7 +542,7 @@
                     const remoteData = JSON.parse(data.files["proteses_data.json"].content);
                     if (remoteData && Array.isArray(remoteData)) {
                         pacientes = remoteData;
-                        localStorage.setItem('clinica_pacientes_v8', JSON.stringify(pacientes));
+                        localStorage.setItem('clinica_pacientes_v9', JSON.stringify(pacientes));
                         updateCounters();
                         renderFila();
                         updateSyncStatus('synced', 'Sincronizado com Sucesso');
