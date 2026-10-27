@@ -66,8 +66,7 @@
                             <p class="text-xs text-slate-400">Digite o número da posição (teclado numérico)</p>
                         </div>
                         <div class="flex items-center gap-2">
-                            <!-- Uso de type="number" e pattern="\d*" para forçar teclado numérico no iOS -->
-                            <input type="number" pattern="\d*" inputmode="numeric" id="input-posicao" min="1" class="w-20 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-center text-lg font-bold text-white focus:outline-none focus:border-blue-500">
+                            <input type="tel" pattern="[0-9]*" inputmode="numeric" id="input-posicao" min="1" class="w-20 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-center text-lg font-bold text-white focus:outline-none focus:border-blue-500">
                             <button type="button" onclick="alterarPosicaoDireta()" class="px-3 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-semibold transition">Mover</button>
                         </div>
                     </div>
@@ -79,17 +78,17 @@
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
                             <label class="block text-xs font-medium text-slate-300 mb-1">CPF</label>
-                            <!-- type="tel" é o mais seguro para abrir o pad numérico em qualquer iPhone -->
-                            <input type="tel" inputmode="numeric" id="input-cpf" maxlength="14" oninput="maskCPF(this)" placeholder="000.000.000-00" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 focus:outline-none focus:border-blue-500 text-slate-100">
+                            <input type="tel" pattern="[0-9]*" inputmode="numeric" id="input-cpf" maxlength="14" oninput="maskCPF(this)" placeholder="000.000.000-00" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 focus:outline-none focus:border-blue-500 text-slate-100">
                         </div>
                         <div>
                             <label class="block text-xs font-medium text-slate-300 mb-1">SUS (CNS)</label>
-                            <input type="tel" inputmode="numeric" id="input-sus" placeholder="Número do Cartão SUS" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 focus:outline-none focus:border-blue-500 text-slate-100">
+                            <!-- Máscara de 15 dígitos + 3 espaços = 18 caracteres máximo -->
+                            <input type="tel" pattern="[0-9]*" inputmode="numeric" id="input-sus" maxlength="18" oninput="maskSUS(this)" placeholder="000 0000 0000 0000" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 focus:outline-none focus:border-blue-500 text-slate-100">
                         </div>
                     </div>
                     <div>
                         <label class="block text-xs font-medium text-slate-300 mb-1">Telefone / Celular</label>
-                        <input type="tel" inputmode="numeric" id="input-tel" maxlength="14" oninput="maskPhone(this)" placeholder="96 99100-8822" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 focus:outline-none focus:border-blue-500 text-slate-100">
+                        <input type="tel" pattern="[0-9]*" inputmode="numeric" id="input-tel" maxlength="14" oninput="maskPhone(this)" placeholder="96 99100-8822" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 focus:outline-none focus:border-blue-500 text-slate-100">
                     </div>
                     <div>
                         <label class="block text-xs font-medium text-slate-300 mb-1">Observações Clínicas</label>
@@ -207,8 +206,8 @@
             { id: 32, nome: "Lourenço Ferreira dos Santos Marques", cpf: "55589138272", sus: "", telefone: "96991870843", obs: "", checked: false, selected: false }
         ];
 
-        // Mudamos a chave para v11 para garantir que ele carregue limpo e rode a autoformatação
-        let pacientes = JSON.parse(localStorage.getItem('clinica_pacientes_v11')) || initialData;
+        // Mudamos a chave para v12 para garantir que ele carregue limpo e rode a nova autoformatação
+        let pacientes = JSON.parse(localStorage.getItem('clinica_pacientes_v12')) || initialData;
         let githubToken = localStorage.getItem('gh_token_proteses') || '';
         const GIST_DESC = "DB_PROTESES_CLINICA_WILSON";
 
@@ -232,6 +231,17 @@
             return v;
         }
 
+        function formatSUSString(v) {
+            if (!v) return "";
+            v = v.replace(/\D/g, "");
+            if (v.length > 15) v = v.slice(0, 15);
+            // Máscara: 000 0000 0000 0000 (3, 4, 4, 4)
+            if (v.length > 11) return v.replace(/^(\d{3})(\d{4})(\d{4})(\d{1,4}).*/, "$1 $2 $3 $4");
+            if (v.length > 7) return v.replace(/^(\d{3})(\d{4})(\d{1,4}).*/, "$1 $2 $3");
+            if (v.length > 3) return v.replace(/^(\d{3})(\d{1,4}).*/, "$1 $2");
+            return v;
+        }
+
         // Funções para os inputs (HTML event)
         function maskCPF(input) {
             input.value = formatCPFString(input.value);
@@ -241,7 +251,11 @@
             input.value = formatPhoneString(input.value);
         }
 
-        // Função que padroniza os dados antigos
+        function maskSUS(input) {
+            input.value = formatSUSString(input.value);
+        }
+
+        // Função que padroniza todos os dados existentes
         function autoFormatExistingData() {
             let changed = false;
             pacientes.forEach(p => {
@@ -257,19 +271,18 @@
                 }
                 if (p.sus) {
                     let old = p.sus;
-                    p.sus = p.sus.replace(/\D/g, ''); // Garante que o SUS seja só número
+                    p.sus = formatSUSString(p.sus);
                     if (old !== p.sus) changed = true;
                 }
             });
             
             if (changed) {
-                localStorage.setItem('clinica_pacientes_v11', JSON.stringify(pacientes));
-                // O saveToStorage() chamaria a sincronização, mas deixamos para o fluxo normal fazer isso.
+                localStorage.setItem('clinica_pacientes_v12', JSON.stringify(pacientes));
             }
         }
 
         window.addEventListener('DOMContentLoaded', () => {
-            // Auto-formata base existente se houver algum erro no padrão
+            // Auto-formata base existente (CPF, Telefone e agora SUS)
             autoFormatExistingData();
             updateCounters();
             renderFila();
@@ -282,7 +295,7 @@
         });
 
         function saveToStorage() {
-            localStorage.setItem('clinica_pacientes_v11', JSON.stringify(pacientes));
+            localStorage.setItem('clinica_pacientes_v12', JSON.stringify(pacientes));
             updateCounters();
             syncToGitHub();
         }
@@ -353,7 +366,7 @@
                     </td>
                     <td class="p-4 font-medium ${p.checked ? 'text-slate-400' : 'text-slate-100'}">${p.nome}</td>
                     <td class="p-4 whitespace-nowrap">${p.cpf || '-'}</td>
-                    <td class="p-4 break-all">${p.sus || '-'}</td>
+                    <td class="p-4 whitespace-nowrap">${p.sus || '-'}</td>
                     <td class="p-4 whitespace-nowrap">${p.telefone || '-'}</td>
                     <td class="p-4 text-center">
                         <button onclick="editPaciente(${p.id})" class="px-3 py-1.5 bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 border border-blue-500/30 rounded-lg text-xs font-semibold transition">✏️ Editar</button>
@@ -603,9 +616,8 @@
                     const remoteData = JSON.parse(data.files["proteses_data.json"].content);
                     if (remoteData && Array.isArray(remoteData)) {
                         pacientes = remoteData;
-                        // Roda a formatação caso venham dados antigos da nuvem sem formatação
                         autoFormatExistingData(); 
-                        localStorage.setItem('clinica_pacientes_v11', JSON.stringify(pacientes));
+                        localStorage.setItem('clinica_pacientes_v12', JSON.stringify(pacientes));
                         updateCounters();
                         renderFila();
                         updateSyncStatus('synced', 'Sincronizado com Sucesso');
