@@ -6,6 +6,12 @@
     <title>Controle de Próteses - Clínico</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Bibliotecas do Firebase -->
+    <script src="https://www.gstatic.com/firebasejs/10.4.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.4.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.4.0/firebase-database-compat.js"></script>
+
     <style>
         body { font-family: 'Inter', sans-serif; }
         @media screen and (max-width: 768px) {
@@ -23,15 +29,12 @@
                 <h1 class="text-base sm:text-lg font-bold tracking-tight">Gestão de Próteses Odontológicas</h1>
                 <div class="flex items-center gap-2 mt-0.5">
                     <span id="sync-status" class="inline-block w-2.5 h-2.5 rounded-full bg-amber-500"></span>
-                    <p class="text-xs text-slate-400" id="sync-text">Aguardando Sincronização</p>
+                    <p class="text-xs text-slate-400" id="sync-text">Conectando ao Firebase...</p>
                 </div>
             </div>
         </div>
 
         <div class="flex items-center gap-3">
-            <button onclick="toggleSyncModal()" class="px-3 py-1.5 bg-slate-700 hover:bg-slate-600 rounded-lg text-xs font-medium transition flex items-center gap-1.5 text-slate-300">
-                ⚙️ Configurar Token
-            </button>
             <div class="flex space-x-1 bg-slate-900 p-1 rounded-xl border border-slate-700">
                 <button onclick="switchTab('cadastro')" id="btn-cadastro" class="px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold transition bg-blue-600 text-white shadow">
                     ➕ Cadastro
@@ -66,7 +69,7 @@
                             <p class="text-xs text-slate-400">Digite o número da posição (teclado numérico)</p>
                         </div>
                         <div class="flex items-center gap-2">
-                            <input type="tel" pattern="[0-9]*" inputmode="numeric" id="input-posicao" min="1" class="w-20 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-center text-lg font-bold text-white focus:outline-none focus:border-blue-500">
+                            <input type="tel" inputmode="numeric" id="input-posicao" min="1" class="w-20 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-center text-lg font-bold text-white focus:outline-none focus:border-blue-500">
                             <button type="button" onclick="alterarPosicaoDireta()" class="px-3 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-semibold transition">Mover</button>
                         </div>
                     </div>
@@ -78,17 +81,16 @@
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
                             <label class="block text-xs font-medium text-slate-300 mb-1">CPF</label>
-                            <input type="tel" pattern="[0-9]*" inputmode="numeric" id="input-cpf" maxlength="14" oninput="maskCPF(this)" placeholder="000.000.000-00" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 focus:outline-none focus:border-blue-500 text-slate-100">
+                            <input type="tel" inputmode="numeric" id="input-cpf" maxlength="14" oninput="maskCPF(this)" placeholder="000.000.000-00" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 focus:outline-none focus:border-blue-500 text-slate-100">
                         </div>
                         <div>
                             <label class="block text-xs font-medium text-slate-300 mb-1">SUS (CNS)</label>
-                            <!-- Máscara de 15 dígitos + 3 espaços = 18 caracteres máximo -->
-                            <input type="tel" pattern="[0-9]*" inputmode="numeric" id="input-sus" maxlength="18" oninput="maskSUS(this)" placeholder="000 0000 0000 0000" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 focus:outline-none focus:border-blue-500 text-slate-100">
+                            <input type="tel" inputmode="numeric" id="input-sus" maxlength="18" oninput="maskSUS(this)" placeholder="000 0000 0000 0000" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 focus:outline-none focus:border-blue-500 text-slate-100">
                         </div>
                     </div>
                     <div>
                         <label class="block text-xs font-medium text-slate-300 mb-1">Telefone / Celular</label>
-                        <input type="tel" pattern="[0-9]*" inputmode="numeric" id="input-tel" maxlength="14" oninput="maskPhone(this)" placeholder="96 99100-8822" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 focus:outline-none focus:border-blue-500 text-slate-100">
+                        <input type="tel" inputmode="numeric" id="input-tel" maxlength="15" oninput="maskPhone(this)" placeholder="96 99100-8822" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 focus:outline-none focus:border-blue-500 text-slate-100">
                     </div>
                     <div>
                         <label class="block text-xs font-medium text-slate-300 mb-1">Observações Clínicas</label>
@@ -148,70 +150,44 @@
         </section>
     </main>
 
-    <!-- Modal Configuração Token GitHub -->
-    <div id="modal-sync" class="fixed inset-0 bg-black/70 backdrop-blur-sm hidden items-center justify-center p-4 z-50">
-        <div class="bg-slate-800 border border-slate-700 rounded-2xl max-w-md w-full p-6 space-y-4 shadow-2xl">
-            <div class="flex justify-between items-center">
-                <h3 class="text-lg font-bold">Configurar Sincronização</h3>
-                <button onclick="toggleSyncModal()" class="text-slate-400 hover:text-white">&times;</button>
-            </div>
-            <p class="text-xs text-slate-400">Insira apenas o seu **Token do GitHub**.</p>
-            <div class="space-y-3">
-                <div>
-                    <label class="block text-xs font-medium text-slate-300 mb-1">GitHub Personal Access Token</label>
-                    <input type="password" id="sync-token" placeholder="ghp_xxxxxxxxxxxx" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-blue-500">
-                </div>
-            </div>
-            <div class="flex justify-end space-x-3 pt-2">
-                <button onclick="toggleSyncModal()" class="px-4 py-2 rounded-xl text-sm font-medium bg-slate-700 hover:bg-slate-600 transition">Cancelar</button>
-                <button onclick="saveSyncConfig()" class="px-4 py-2 rounded-xl text-sm font-medium bg-blue-600 hover:bg-blue-500 transition shadow">Salvar & Sincronizar</button>
-            </div>
-        </div>
-    </div>
-
     <!-- JavaScript Application Logic -->
     <script>
-        const initialData = [
-            { id: 1, nome: "Raimundo Oliveira Nobre", cpf: "11986433234", sus: "", telefone: "96991115707", obs: "", checked: false, selected: false },
-            { id: 2, nome: "Raimundo Felipe Marinho", cpf: "17871212249", sus: "898003938282608", telefone: "96991938970", obs: "", checked: false, selected: false },
-            { id: 3, nome: "Albetiza da Conceição", cpf: "71704655315", sus: "70870514925", telefone: "96991053584", obs: "", checked: false, selected: false },
-            { id: 4, nome: "Rosa dos Anjos Rodrigues", cpf: "27262111272", sus: "705805412412937", telefone: "96991550272", obs: "", checked: false, selected: false },
-            { id: 5, nome: "Maria dos Remedios dos Santos", cpf: "35841702220", sus: "", telefone: "96992086041", obs: "", checked: false, selected: false },
-            { id: 6, nome: "Sandra Brito Paiva", cpf: "46985727204", sus: "702807667596763", telefone: "", obs: "", checked: false, selected: false },
-            { id: 7, nome: "Afranio Jorge Nunes da Silva", cpf: "16407032415", sus: "705000207284550", telefone: "96992003045", obs: "", checked: false, selected: false },
-            { id: 8, nome: "Maria Regina Nascimento", cpf: "", sus: "700006911146210", telefone: "96991929212", obs: "", checked: false, selected: false },
-            { id: 9, nome: "Eliane Rodrigues Lira", cpf: "52105075215", sus: "701008808019899", telefone: "96991696040", obs: "", checked: false, selected: false },
-            { id: 10, nome: "Maria do Carmo dos Santos de Araujo", cpf: "64945650268", sus: "708905795922511", telefone: "96991023979", obs: "", checked: false, selected: false },
-            { id: 11, nome: "Raimunda Fialho Ferreira", cpf: "20950934291", sus: "700004003904006", telefone: "96991380872", obs: "", checked: false, selected: false },
-            { id: 12, nome: "Maria Luiza Camargo dos Reis Leite", cpf: "64307921291", sus: "704700733618031", telefone: "96991528040", obs: "", checked: false, selected: false },
-            { id: 13, nome: "Marileusa da Silva Magno", cpf: "29468140253", sus: "705008602805557", telefone: "96991180616", obs: "", checked: false, selected: false },
-            { id: 14, nome: "Luiz Antonio Almeida Oliveira", cpf: "31596134291", sus: "708202136736548", telefone: "96999082591", obs: "", checked: false, selected: false },
-            { id: 15, nome: "Joselina da Costa Francisco", cpf: "35808276268", sus: "", telefone: "96991450492", obs: "", checked: false, selected: false },
-            { id: 16, nome: "Josefa Pereira Dias", cpf: "17863449200", sus: "700407496357848", telefone: "96991097482", obs: "", checked: false, selected: false },
-            { id: 17, nome: "Balbino Silva Serra", cpf: "16369629200", sus: "", telefone: "96991112918", obs: "", checked: false, selected: false },
-            { id: 18, nome: "Orleans Conceicao", cpf: "51141302268", sus: "", telefone: "96991762088", obs: "", checked: false, selected: false },
-            { id: 19, nome: "Domingos Paulo de Oliveira", cpf: "12620637287", sus: "706004884978548", telefone: "", obs: "", checked: false, selected: false },
-            { id: 20, nome: "Manoel dos Santos Almeida da Silva", cpf: "35818735249", sus: "700403410249940", telefone: "96991103080", obs: "", checked: false, selected: false },
-            { id: 21, nome: "Jaris Nobre Pedroso", cpf: "23276274272", sus: "", telefone: "93981250611", obs: "", checked: false, selected: false },
-            { id: 22, nome: "Antonia de Oliveira Soares", cpf: "", sus: "708007885033422", telefone: "96991692245", obs: "", checked: false, selected: false },
-            { id: 23, nome: "Maria Lucila Sousa da Silva", cpf: "17866650268", sus: "708607103099590", telefone: "96991355976", obs: "", checked: false, selected: false },
-            { id: 24, nome: "Neucilda Carvalho Pimenta", cpf: "63501171234", sus: "", telefone: "96991005124", obs: "", checked: false, selected: false },
-            { id: 25, nome: "Raimundo Flexa Barbosa", cpf: "17853621272", sus: "708502383643179", telefone: "96991721189", obs: "", checked: false, selected: false },
-            { id: 26, nome: "Antônio Tertuliano Lima Filho", cpf: "35813520287", sus: "706307789409779", telefone: "96991201219", obs: "", checked: false, selected: false },
-            { id: 27, nome: "Margarete Trindade Silva da Silva", cpf: "01828267244", sus: "", telefone: "96984352831", obs: "", checked: false, selected: false },
-            { id: 28, nome: "Maria do Socorro dos Santos Rodrigues", cpf: "46646078300", sus: "705608477251312", telefone: "96984237422", obs: "", checked: false, selected: false },
-            { id: 29, nome: "Maria Inez de Sousa Gomes", cpf: "16808002215", sus: "700506968296454", telefone: "", obs: "", checked: false, selected: false },
-            { id: 30, nome: "Miroaldo Assunção da Silva", cpf: "88884627249", sus: "", telefone: "", obs: "", checked: false, selected: false },
-            { id: 31, nome: "Maria Silva de Castro", cpf: "58245626287", sus: "708204142824846", telefone: "", obs: "", checked: false, selected: false },
-            { id: 32, nome: "Lourenço Ferreira dos Santos Marques", cpf: "55589138272", sus: "", telefone: "96991870843", obs: "", checked: false, selected: false }
-        ];
+        // Configuração do Firebase
+        const firebaseConfig = {
+            apiKey: "AIzaSyD7vdvBDk6k48AlRDQpdrhOxG212MovmrM",
+            authDomain: "rocha-batista.firebaseapp.com",
+            databaseURL: "https://rocha-batista-default-rtdb.firebaseio.com",
+            projectId: "rocha-batista",
+            storageBucket: "rocha-batista.firebasestorage.app",
+            messagingSenderId: "737568409775",
+            appId: "1:737568409775:web:41b6eefa0b18199886ac5a"
+        };
 
-        // Mudamos a chave para v12 para garantir que ele carregue limpo e rode a nova autoformatação
-        let pacientes = JSON.parse(localStorage.getItem('clinica_pacientes_v12')) || initialData;
-        let githubToken = localStorage.getItem('gh_token_proteses') || '';
-        const GIST_DESC = "DB_PROTESES_CLINICA_WILSON";
+        if (!firebase.apps.length) {
+            firebase.initializeApp(firebaseConfig);
+        }
+        const auth = firebase.auth();
+        const db = firebase.database();
 
-        // Funções puras de formatação para rodar via código
+        const DEFAULT_EMAIL = "rochabatista@wilson.com";
+        const DEFAULT_PASS = "wrzt01";
+
+        let userId = null;
+        let pacientes = [];
+
+        // Login Silencioso
+        auth.signInWithEmailAndPassword(DEFAULT_EMAIL, DEFAULT_PASS).catch(err => {
+            updateSyncStatus('error', 'Falha na autenticação.');
+        });
+
+        auth.onAuthStateChanged(user => {
+            if (user) {
+                userId = user.uid;
+                carregarDadosFirebase();
+            }
+        });
+
+        // Funções puras de formatação
         function formatCPFString(v) {
             if (!v) return "";
             v = v.replace(/\D/g, "");
@@ -235,7 +211,6 @@
             if (!v) return "";
             v = v.replace(/\D/g, "");
             if (v.length > 15) v = v.slice(0, 15);
-            // Máscara: 000 0000 0000 0000 (3, 4, 4, 4)
             if (v.length > 11) return v.replace(/^(\d{3})(\d{4})(\d{4})(\d{1,4}).*/, "$1 $2 $3 $4");
             if (v.length > 7) return v.replace(/^(\d{3})(\d{4})(\d{1,4}).*/, "$1 $2 $3");
             if (v.length > 3) return v.replace(/^(\d{3})(\d{1,4}).*/, "$1 $2");
@@ -243,61 +218,37 @@
         }
 
         // Funções para os inputs (HTML event)
-        function maskCPF(input) {
-            input.value = formatCPFString(input.value);
-        }
+        function maskCPF(input) { input.value = formatCPFString(input.value); }
+        function maskPhone(input) { input.value = formatPhoneString(input.value); }
+        function maskSUS(input) { input.value = formatSUSString(input.value); }
 
-        function maskPhone(input) {
-            input.value = formatPhoneString(input.value);
-        }
-
-        function maskSUS(input) {
-            input.value = formatSUSString(input.value);
-        }
-
-        // Função que padroniza todos os dados existentes
-        function autoFormatExistingData() {
-            let changed = false;
-            pacientes.forEach(p => {
-                if (p.cpf) {
-                    let old = p.cpf;
-                    p.cpf = formatCPFString(p.cpf);
-                    if (old !== p.cpf) changed = true;
+        function carregarDadosFirebase() {
+            updateSyncStatus('syncing', 'Baixando dados...');
+            db.ref(`usuarios/${userId}/proteses/fila`).on('value', snapshot => {
+                const data = snapshot.val();
+                if (data) {
+                    pacientes = data;
+                } else {
+                    pacientes = [];
                 }
-                if (p.telefone) {
-                    let old = p.telefone;
-                    p.telefone = formatPhoneString(p.telefone);
-                    if (old !== p.telefone) changed = true;
-                }
-                if (p.sus) {
-                    let old = p.sus;
-                    p.sus = formatSUSString(p.sus);
-                    if (old !== p.sus) changed = true;
-                }
+                updateCounters();
+                renderFila();
+                updateSyncStatus('synced', 'Sincronizado');
+            }, error => {
+                updateSyncStatus('error', 'Erro ao carregar');
             });
-            
-            if (changed) {
-                localStorage.setItem('clinica_pacientes_v12', JSON.stringify(pacientes));
-            }
         }
 
-        window.addEventListener('DOMContentLoaded', () => {
-            // Auto-formata base existente (CPF, Telefone e agora SUS)
-            autoFormatExistingData();
-            updateCounters();
-            renderFila();
-            
-            if (githubToken) {
-                syncFromGitHub(true);
-            } else {
-                updateSyncStatus('local', 'Usando armazenamento local (Configure o token)');
-            }
-        });
-
-        function saveToStorage() {
-            localStorage.setItem('clinica_pacientes_v12', JSON.stringify(pacientes));
-            updateCounters();
-            syncToGitHub();
+        function salvarNoFirebase() {
+            if (!userId) return;
+            updateSyncStatus('syncing', 'Salvando...');
+            db.ref(`usuarios/${userId}/proteses/fila`).set(pacientes)
+                .then(() => {
+                    updateSyncStatus('synced', 'Sincronizado');
+                })
+                .catch(() => {
+                    updateSyncStatus('error', 'Erro ao salvar');
+                });
         }
 
         function updateCounters() {
@@ -380,8 +331,7 @@
             const p = pacientes.find(item => item.id === id);
             if (p) {
                 p.checked = !p.checked;
-                saveToStorage();
-                renderFila();
+                salvarNoFirebase();
             }
         }
 
@@ -389,12 +339,14 @@
             const p = pacientes.find(item => item.id === id);
             if (p) {
                 p.selected = !p.selected;
+                salvarNoFirebase(); // Opcional salvar a seleção no servidor, mas garante persistência
             }
         }
 
         function toggleSelectAll(select) {
             const newState = select ? true : false;
             pacientes.forEach(p => p.selected = newState);
+            salvarNoFirebase();
             renderFila();
         }
 
@@ -414,7 +366,7 @@
                     p.telefone = document.getElementById('input-tel').value.trim();
                     p.obs = document.getElementById('input-obs').value.trim();
                 }
-                alert('Paciente atualizado e sincronizado!');
+                alert('Paciente atualizado!');
             } else {
                 const novo = {
                     id: Date.now(),
@@ -427,10 +379,10 @@
                     selected: false
                 };
                 pacientes.push(novo);
-                alert('Paciente cadastrado e sincronizado!');
+                alert('Paciente cadastrado!');
             }
 
-            saveToStorage();
+            salvarNoFirebase();
             resetForm();
             switchTab('fila');
         }
@@ -477,8 +429,8 @@
             const [itemMovido] = pacientes.splice(currentIndex, 1);
             pacientes.splice(targetIndex, 0, itemMovido);
 
-            saveToStorage();
-            alert(`Paciente movido para a posição ${novaPosicaoInput} com sucesso e sincronizado!`);
+            salvarNoFirebase();
+            alert(`Paciente movido para a posição ${novaPosicaoInput} com sucesso!`);
             switchTab('fila');
         }
 
@@ -488,10 +440,10 @@
 
             if (confirm("Tem certeza que deseja excluir este paciente?")) {
                 pacientes = pacientes.filter(item => item.id != editId);
-                saveToStorage();
+                salvarNoFirebase();
                 resetForm();
                 switchTab('fila');
-                alert('Paciente excluído e sincronizado!');
+                alert('Paciente excluído!');
             }
         }
 
@@ -534,100 +486,6 @@
             link.click();
             document.body.removeChild(link);
             URL.revokeObjectURL(url);
-        }
-
-        function toggleSyncModal() {
-            const modal = document.getElementById('modal-sync');
-            modal.classList.toggle('hidden');
-            modal.classList.toggle('flex');
-            document.getElementById('sync-token').value = githubToken;
-        }
-
-        function saveSyncConfig() {
-            githubToken = document.getElementById('sync-token').value.trim();
-            localStorage.setItem('gh_token_proteses', githubToken);
-            toggleSyncModal();
-            syncFromGitHub(false);
-        }
-
-        async function findOrCreateGist() {
-            const res = await fetch('https://api.github.com/gists', {
-                headers: { 'Authorization': `token ${githubToken}` }
-            });
-            const gists = await res.json();
-            const existing = gists.find(g => g.description === GIST_DESC);
-            if (existing) return existing.id;
-
-            const createRes = await fetch('https://api.github.com/gists', {
-                method: 'POST',
-                headers: {
-                    'Authorization': `token ${githubToken}`,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    description: GIST_DESC,
-                    public: false,
-                    files: { "proteses_data.json": { content: JSON.stringify(initialData) } }
-                })
-            });
-            const newGist = await createRes.json();
-            return newGist.id;
-        }
-
-        async function syncToGitHub() {
-            if (!githubToken) return;
-            updateSyncStatus('syncing', 'Sincronizando com nuvem...');
-            try {
-                const gistId = await findOrCreateGist();
-                const res = await fetch(`https://api.github.com/gists/${gistId}`, {
-                    method: 'PATCH',
-                    headers: {
-                        'Authorization': `token ${githubToken}`,
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        files: {
-                            "proteses_data.json": {
-                                content: JSON.stringify(pacientes, null, 2)
-                            }
-                        }
-                    })
-                });
-                if (res.ok) {
-                    updateSyncStatus('synced', 'Sincronizado na Nuvem');
-                } else {
-                    updateSyncStatus('error', 'Erro ao sincronizar');
-                }
-            } catch (e) {
-                updateSyncStatus('error', 'Sem conexão com nuvem');
-            }
-        }
-
-        async function syncFromGitHub(silent = false) {
-            if (!githubToken) return;
-            if (!silent) updateSyncStatus('syncing', 'Baixando dados da nuvem...');
-            try {
-                const gistId = await findOrCreateGist();
-                const res = await fetch(`https://api.github.com/gists/${gistId}`, {
-                    headers: { 'Authorization': `token ${githubToken}` }
-                });
-                const data = await res.json();
-                if (data.files && data.files["proteses_data.json"]) {
-                    const remoteData = JSON.parse(data.files["proteses_data.json"].content);
-                    if (remoteData && Array.isArray(remoteData)) {
-                        pacientes = remoteData;
-                        autoFormatExistingData(); 
-                        localStorage.setItem('clinica_pacientes_v12', JSON.stringify(pacientes));
-                        updateCounters();
-                        renderFila();
-                        updateSyncStatus('synced', 'Sincronizado com Sucesso');
-                        if (!silent) alert('Dados sincronizados com sucesso da nuvem!');
-                    }
-                }
-            } catch (e) {
-                updateSyncStatus('error', 'Erro ao carregar da nuvem');
-                if (!silent) alert('Erro ao conectar com o GitHub.');
-            }
         }
     </script>
 </body>
