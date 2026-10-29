@@ -27,9 +27,9 @@
             <div class="bg-blue-600 p-2 rounded-lg text-white font-bold text-xl">🦷</div>
             <div>
                 <h1 class="text-base sm:text-lg font-bold tracking-tight">Gestão de Próteses Odontológicas</h1>
-                <div class="flex items-center gap-2 mt-0.5">
-                    <span id="sync-status" class="inline-block w-2.5 h-2.5 rounded-full bg-amber-500"></span>
-                    <p class="text-xs text-slate-400" id="sync-text">Autenticando...</p>
+                <div class="flex items-center gap-1.5 mt-0.5">
+                    <p class="text-xs text-slate-400 font-medium" id="sync-text">Sincronizando</p>
+                    <span id="sync-status" class="inline-block w-2.5 h-2.5 rounded-full bg-amber-500 animate-pulse"></span>
                 </div>
             </div>
         </div>
@@ -151,41 +151,6 @@
     </main>
 
     <script>
-        const initialData = [
-            { id: 1, nome: "Raimundo Oliveira Nobre", cpf: "119.864.332-34", sus: "", telefone: "96 99115-707", obs: "", checked: false, selected: false },
-            { id: 2, nome: "Raimundo Felipe Marinho", cpf: "178.712.122-49", sus: "898 0039 3828 2608", telefone: "96 99193-8970", obs: "", checked: false, selected: false },
-            { id: 3, nome: "Albetiza da Conceição", cpf: "717.046.553-15", sus: "708 7051 4925", telefone: "96 99105-3584", obs: "", checked: false, selected: false },
-            { id: 4, nome: "Rosa dos Anjos Rodrigues", cpf: "272.621.112-72", sus: "705 8054 1241 2937", telefone: "96 99155-0272", obs: "", checked: false, selected: false },
-            { id: 5, nome: "Maria dos Remedios dos Santos", cpf: "358.417.022-20", sus: "", telefone: "96 99208-6041", obs: "", checked: false, selected: false },
-            { id: 6, nome: "Sandra Brito Paiva", cpf: "469.857.272-04", sus: "702 8076 6759 6763", telefone: "", obs: "", checked: false, selected: false },
-            { id: 7, nome: "Afranio Jorge Nunes da Silva", cpf: "164.070.324-15", sus: "705 0002 0728 4550", telefone: "96 99200-3045", obs: "", checked: false, selected: false },
-            { id: 8, nome: "Maria Regina Nascimento", cpf: "", sus: "700 0069 1114 6210", telefone: "96 99192-9212", obs: "", checked: false, selected: false },
-            { id: 9, nome: "Eliane Rodrigues Lira", cpf: "521.050.752-15", sus: "701 0088 0801 9899", telefone: "96 99169-6040", obs: "", checked: false, selected: false },
-            { id: 10, nome: "Maria do Carmo dos Santos de Araujo", cpf: "649.456.502-68", sus: "708 9057 9592 2511", telefone: "96 99102-3979", obs: "", checked: false, selected: false },
-            { id: 11, nome: "Raimunda Fialho Ferreira", cpf: "209.509.342-91", sus: "700 0040 0390 4006", telefone: "96 99138-0872", obs: "", checked: false, selected: false },
-            { id: 12, nome: "Maria Luiza Camargo dos Reis Leite", cpf: "643.079.212-91", sus: "704 7007 3361 8031", telefone: "96 99152-8040", obs: "", checked: false, selected: false },
-            { id: 13, nome: "Marileusa da Silva Magno", cpf: "294.681.402-53", sus: "705 0086 0280 5557", telefone: "96 99118-0616", obs: "", checked: false, selected: false },
-            { id: 14, nome: "Luiz Antonio Almeida Oliveira", cpf: "315.961.342-91", sus: "708 2021 3673 6548", telefone: "96 99908-2591", obs: "", checked: false, selected: false },
-            { id: 15, nome: "Joselina da Costa Francisco", cpf: "358.082.762-68", sus: "", telefone: "96 99145-0492", obs: "", checked: false, selected: false },
-            { id: 16, nome: "Josefa Pereira Dias", cpf: "178.634.492-00", sus: "700 4074 9635 7848", telefone: "96 99109-7482", obs: "", checked: false, selected: false },
-            { id: 17, nome: "Balbino Silva Serra", cpf: "163.696.292-00", sus: "", telefone: "96 99111-2918", obs: "", checked: false, selected: false },
-            { id: 18, nome: "Orleans Conceicao", cpf: "511.413.022-68", sus: "", telefone: "96 99176-2088", obs: "", checked: false, selected: false },
-            { id: 19, nome: "Domingos Paulo de Oliveira", cpf: "126.206.372-87", sus: "706 0048 8497 8548", telefone: "", obs: "", checked: false, selected: false },
-            { id: 20, nome: "Manoel dos Santos Almeida da Silva", cpf: "358.187.352-49", sus: "700 4034 1024 9940", telefone: "96 99110-3080", obs: "", checked: false, selected: false },
-            { id: 21, nome: "Jaris Nobre Pedroso", cpf: "232.762.742-72", sus: "", telefone: "93 98125-0611", obs: "", checked: false, selected: false },
-            { id: 22, nome: "Antonia de Oliveira Soares", cpf: "", sus: "708 0078 8503 3422", telefone: "96 99169-2245", obs: "", checked: false, selected: false },
-            { id: 23, nome: "Maria Lucila Sousa da Silva", cpf: "178.666.502-68", sus: "708 6071 0309 9590", telefone: "96 99135-5976", obs: "", checked: false, selected: false },
-            { id: 24, nome: "Neucilda Carvalho Pimenta", cpf: "635.011.712-34", sus: "", telefone: "96 99100-5124", obs: "", checked: false, selected: false },
-            { id: 25, nome: "Raimundo Flexa Barbosa", cpf: "178.536.212-72", sus: "708 5023 8364 3179", telefone: "96 99172-1189", obs: "", checked: false, selected: false },
-            { id: 26, nome: "Antônio Tertuliano Lima Filho", cpf: "358.135.202-87", sus: "706 3077 8940 9779", telefone: "96 99120-1219", obs: "", checked: false, selected: false },
-            { id: 27, nome: "Margarete Trindade Silva da Silva", cpf: "018.282.672-44", sus: "", telefone: "96 98435-2831", obs: "", checked: false, selected: false },
-            { id: 28, nome: "Maria do Socorro dos Santos Rodrigues", cpf: "466.460.783-00", sus: "705 6084 7725 1312", telefone: "96 98423-7422", obs: "", checked: false, selected: false },
-            { id: 29, nome: "Maria Inez de Sousa Gomes", cpf: "168.080.022-15", sus: "700 5069 6829 6454", telefone: "", obs: "", checked: false, selected: false },
-            { id: 30, nome: "Miroaldo Assunção da Silva", cpf: "888.846.272-49", sus: "", telefone: "", obs: "", checked: false, selected: false },
-            { id: 31, nome: "Maria Silva de Castro", cpf: "582.456.262-87", sus: "708 2041 4282 4846", telefone: "", obs: "", checked: false, selected: false },
-            { id: 32, nome: "Lourenço Ferreira dos Santos Marques", cpf: "555.891.382-72", sus: "", telefone: "96 99187-0843", obs: "", checked: false, selected: false }
-        ];
-
         const firebaseConfig = {
             apiKey: "AIzaSyD7vdvBDk6k48AlRDQpdrhOxG212MovmrM",
             authDomain: "rocha-batista.firebaseapp.com",
@@ -210,13 +175,13 @@
 
         // Login Silencioso
         auth.signInWithEmailAndPassword(DEFAULT_EMAIL, DEFAULT_PASS).catch(err => {
-            updateSyncStatus('error', 'Falha na autenticação.');
+            updateSyncStatus('error', 'Erro');
         });
 
         auth.onAuthStateChanged(user => {
             if (user) {
                 userId = user.uid;
-                iniciarProcessoFirebase();
+                carregarDadosFirebase();
             }
         });
 
@@ -253,83 +218,27 @@
         function maskPhone(input) { input.value = formatPhoneString(input.value); }
         function maskSUS(input) { input.value = formatSUSString(input.value); }
 
-        async function iniciarProcessoFirebase() {
-            try {
-                updateSyncStatus('syncing', 'Analisando Nuvem...');
-                const snapshot = await db.ref(`usuarios/${userId}/proteses/fila`).once('value');
-                const data = snapshot.val();
-
-                if (data && data.length > 0) {
-                    // Firebase já possui dados, liga o ouvinte direto
-                    ligarOuvinteTempoReal();
-                } else {
-                    // Firebase VAZIO. Iniciando ponte de resgate do GitHub/Backup
-                    updateSyncStatus('syncing', 'Migrando dados antigos...');
-                    let migracaoConcluida = false;
-                    
-                    // 1. Tenta resgatar pelo Token do GitHub salvo no celular
-                    const token = localStorage.getItem('gh_token_proteses');
-                    if (token) {
-                        try {
-                            const res = await fetch('https://api.github.com/gists', { headers: { 'Authorization': `token ${token}` } });
-                            if (res.ok) {
-                                const gists = await res.json();
-                                const existing = gists.find(g => g.description === "DB_PROTESES_CLINICA_WILSON");
-                                if (existing) {
-                                    const gistRes = await fetch(`https://api.github.com/gists/${existing.id}`, { headers: { 'Authorization': `token ${token}` } });
-                                    const gistData = await gistRes.json();
-                                    if (gistData.files && gistData.files["proteses_data.json"]) {
-                                        pacientes = JSON.parse(gistData.files["proteses_data.json"].content);
-                                        migracaoConcluida = true;
-                                    }
-                                }
-                            }
-                        } catch (e) { console.error("Falha ao puxar do GitHub"); }
-                    }
-
-                    // 2. Tenta resgatar do armazenamento local caso o GitHub falhe
-                    if (!migracaoConcluida) {
-                        try {
-                            const backupLocal = JSON.parse(localStorage.getItem('clinica_pacientes_v12'));
-                            if (backupLocal && backupLocal.length > 0) {
-                                pacientes = backupLocal;
-                                migracaoConcluida = true;
-                            }
-                        } catch(e) {}
-                    }
-
-                    // 3. Usa a lista padrão se tudo falhar (Segurança máxima)
-                    if (!migracaoConcluida) {
-                        pacientes = initialData;
-                    }
-
-                    // Salva a lista resgatada no Firebase e liga o ouvinte
-                    await db.ref(`usuarios/${userId}/proteses/fila`).set(pacientes);
-                    ligarOuvinteTempoReal();
-                }
-            } catch(e) {
-                updateSyncStatus('error', 'Erro ao iniciar sistema.');
-            }
-        }
-
-        function ligarOuvinteTempoReal() {
+        function carregarDadosFirebase() {
+            updateSyncStatus('syncing', 'Sincronizando');
             db.ref(`usuarios/${userId}/proteses/fila`).on('value', snapshot => {
                 pacientes = snapshot.val() || [];
                 updateCounters();
                 renderFila();
-                updateSyncStatus('synced', 'Nuvem Ativa (Firebase)');
+                updateSyncStatus('synced', 'Ativo');
+            }, error => {
+                updateSyncStatus('error', 'Erro');
             });
         }
 
         function salvarNoFirebase() {
             if (!userId) return;
-            updateSyncStatus('syncing', 'Salvando...');
+            updateSyncStatus('syncing', 'Sincronizando');
             db.ref(`usuarios/${userId}/proteses/fila`).set(pacientes)
                 .then(() => {
-                    updateSyncStatus('synced', 'Nuvem Ativa (Firebase)');
+                    updateSyncStatus('synced', 'Ativo');
                 })
                 .catch(() => {
-                    updateSyncStatus('error', 'Erro ao salvar');
+                    updateSyncStatus('error', 'Erro');
                 });
         }
 
@@ -341,14 +250,17 @@
             const dot = document.getElementById('sync-status');
             const txt = document.getElementById('sync-text');
             txt.innerText = text;
+            
+            dot.classList.remove('bg-emerald-500', 'bg-amber-500', 'bg-rose-500', 'bg-slate-500', 'animate-pulse');
+            
             if (status === 'synced') {
-                dot.className = "inline-block w-2.5 h-2.5 rounded-full bg-emerald-500";
+                dot.classList.add('bg-emerald-500');
             } else if (status === 'syncing') {
-                dot.className = "inline-block w-2.5 h-2.5 rounded-full bg-amber-500 animate-pulse";
+                dot.classList.add('bg-amber-500', 'animate-pulse');
             } else if (status === 'error') {
-                dot.className = "inline-block w-2.5 h-2.5 rounded-full bg-rose-500";
+                dot.classList.add('bg-rose-500');
             } else {
-                dot.className = "inline-block w-2.5 h-2.5 rounded-full bg-slate-500";
+                dot.classList.add('bg-slate-500');
             }
         }
 
