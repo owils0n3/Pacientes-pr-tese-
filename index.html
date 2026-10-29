@@ -29,7 +29,7 @@
                 <h1 class="text-base sm:text-lg font-bold tracking-tight">Gestão de Próteses Odontológicas</h1>
                 <div class="flex items-center gap-2 mt-0.5">
                     <span id="sync-status" class="inline-block w-2.5 h-2.5 rounded-full bg-amber-500"></span>
-                    <p class="text-xs text-slate-400" id="sync-text">Conectando ao Firebase...</p>
+                    <p class="text-xs text-slate-400" id="sync-text">Autenticando...</p>
                 </div>
             </div>
         </div>
@@ -55,7 +55,7 @@
                 <div class="mb-6 border-b border-slate-700 pb-4 flex justify-between items-center">
                     <div>
                         <h2 class="text-xl font-bold text-white" id="form-title">Cadastrar Novo Paciente</h2>
-                        <p class="text-xs sm:text-sm text-slate-400">Preencha os dados abaixo. Sincroniza automaticamente.</p>
+                        <p class="text-xs sm:text-sm text-slate-400">Preencha os dados abaixo. Sincroniza automaticamente na nuvem.</p>
                     </div>
                 </div>
                 
@@ -66,7 +66,7 @@
                     <div id="reorder-group" class="hidden bg-slate-900/60 p-4 rounded-xl border border-slate-700 flex items-center justify-between gap-4">
                         <div>
                             <label class="block text-xs font-semibold text-blue-400 uppercase tracking-wider">Posição na Fila</label>
-                            <p class="text-xs text-slate-400">Digite o número da posição (teclado numérico)</p>
+                            <p class="text-xs text-slate-400">Digite o número da posição</p>
                         </div>
                         <div class="flex items-center gap-2">
                             <input type="tel" inputmode="numeric" id="input-posicao" min="1" class="w-20 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-center text-lg font-bold text-white focus:outline-none focus:border-blue-500">
@@ -113,14 +113,14 @@
         <section id="tab-fila" class="hidden space-y-4">
             <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-slate-800/50 p-4 rounded-2xl border border-slate-700">
                 <div>
-                    <h2 class="text-xl font-bold">Fila de Próteses & Seleção para Exportação</h2>
-                    <p class="text-sm text-slate-400">Selecione os pacientes e exporte o CSV. Dê baixa nos concluídos.</p>
+                    <h2 class="text-xl font-bold">Fila de Próteses & Exportação</h2>
+                    <p class="text-sm text-slate-400">Selecione os pacientes e exporte o CSV.</p>
                 </div>
                 <div class="flex flex-wrap items-center gap-2 w-full sm:w-auto">
                     <input type="text" id="search-fila" oninput="renderFila()" placeholder="Buscar paciente..." class="bg-slate-900 border border-slate-700 rounded-xl px-4 py-2 text-sm focus:outline-none focus:border-blue-500 w-full sm:w-48">
                     <button onclick="toggleSelectAll(true)" class="px-3 py-2 bg-slate-700 hover:bg-slate-600 rounded-xl text-xs font-medium transition">Selecionar Todos</button>
                     <button onclick="exportSelectedCSV()" class="bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2 rounded-xl text-sm font-medium transition flex items-center gap-2 shadow">
-                        📥 Exportar Selecionados (CSV)
+                        📥 Exportar CSV
                     </button>
                 </div>
             </div>
@@ -150,9 +150,7 @@
         </section>
     </main>
 
-    <!-- JavaScript Application Logic -->
     <script>
-        // Restauração da lista original
         const initialData = [
             { id: 1, nome: "Raimundo Oliveira Nobre", cpf: "119.864.332-34", sus: "", telefone: "96 99115-707", obs: "", checked: false, selected: false },
             { id: 2, nome: "Raimundo Felipe Marinho", cpf: "178.712.122-49", sus: "898 0039 3828 2608", telefone: "96 99193-8970", obs: "", checked: false, selected: false },
@@ -188,7 +186,6 @@
             { id: 32, nome: "Lourenço Ferreira dos Santos Marques", cpf: "555.891.382-72", sus: "", telefone: "96 99187-0843", obs: "", checked: false, selected: false }
         ];
 
-        // Configuração do Firebase
         const firebaseConfig = {
             apiKey: "AIzaSyD7vdvBDk6k48AlRDQpdrhOxG212MovmrM",
             authDomain: "rocha-batista.firebaseapp.com",
@@ -219,11 +216,10 @@
         auth.onAuthStateChanged(user => {
             if (user) {
                 userId = user.uid;
-                carregarDadosFirebase();
+                iniciarProcessoFirebase();
             }
         });
 
-        // Funções puras de formatação
         function formatCPFString(v) {
             if (!v) return "";
             v = v.replace(/\D/g, "");
@@ -253,38 +249,326 @@
             return v;
         }
 
-        // Funções para os inputs (HTML event)
         function maskCPF(input) { input.value = formatCPFString(input.value); }
         function maskPhone(input) { input.value = formatPhoneString(input.value); }
         function maskSUS(input) { input.value = formatSUSString(input.value); }
 
-        function carregarDadosFirebase() {
-            updateSyncStatus('syncing', 'Baixando dados...');
-            
-            // Tenta pegar de uma base de backup salva no navegador, se existir
-            let backupLocal = JSON.parse(localStorage.getItem('clinica_pacientes_v12')) || null;
-
-            db.ref(`usuarios/${userId}/proteses/fila`).on('value', snapshot => {
+        async function iniciarProcessoFirebase() {
+            try {
+                updateSyncStatus('syncing', 'Analisando Nuvem...');
+                const snapshot = await db.ref(`usuarios/${userId}/proteses/fila`).once('value');
                 const data = snapshot.val();
-                if (data) {
-                    pacientes = data;
-                    updateCounters();
-                    renderFila();
-                    updateSyncStatus('synced', 'Sincronizado');
+
+                if (data && data.length > 0) {
+                    // Firebase já possui dados, liga o ouvinte direto
+                    ligarOuvinteTempoReal();
                 } else {
-                    // Se o Firebase estiver vazio (primeiro acesso), envia a base antiga!
-                    if (backupLocal && backupLocal.length > 0) {
-                        pacientes = backupLocal;
-                    } else {
+                    // Firebase VAZIO. Iniciando ponte de resgate do GitHub/Backup
+                    updateSyncStatus('syncing', 'Migrando dados antigos...');
+                    let migracaoConcluida = false;
+                    
+                    // 1. Tenta resgatar pelo Token do GitHub salvo no celular
+                    const token = localStorage.getItem('gh_token_proteses');
+                    if (token) {
+                        try {
+                            const res = await fetch('https://api.github.com/gists', { headers: { 'Authorization': `token ${token}` } });
+                            if (res.ok) {
+                                const gists = await res.json();
+                                const existing = gists.find(g => g.description === "DB_PROTESES_CLINICA_WILSON");
+                                if (existing) {
+                                    const gistRes = await fetch(`https://api.github.com/gists/${existing.id}`, { headers: { 'Authorization': `token ${token}` } });
+                                    const gistData = await gistRes.json();
+                                    if (gistData.files && gistData.files["proteses_data.json"]) {
+                                        pacientes = JSON.parse(gistData.files["proteses_data.json"].content);
+                                        migracaoConcluida = true;
+                                    }
+                                }
+                            }
+                        } catch (e) { console.error("Falha ao puxar do GitHub"); }
+                    }
+
+                    // 2. Tenta resgatar do armazenamento local caso o GitHub falhe
+                    if (!migracaoConcluida) {
+                        try {
+                            const backupLocal = JSON.parse(localStorage.getItem('clinica_pacientes_v12'));
+                            if (backupLocal && backupLocal.length > 0) {
+                                pacientes = backupLocal;
+                                migracaoConcluida = true;
+                            }
+                        } catch(e) {}
+                    }
+
+                    // 3. Usa a lista padrão se tudo falhar (Segurança máxima)
+                    if (!migracaoConcluida) {
                         pacientes = initialData;
                     }
-                    salvarNoFirebase();
-                    updateCounters();
-                    renderFila();
+
+                    // Salva a lista resgatada no Firebase e liga o ouvinte
+                    await db.ref(`usuarios/${userId}/proteses/fila`).set(pacientes);
+                    ligarOuvinteTempoReal();
                 }
-            }, error => {
-                updateSyncStatus('error', 'Erro ao carregar');
+            } catch(e) {
+                updateSyncStatus('error', 'Erro ao iniciar sistema.');
+            }
+        }
+
+        function ligarOuvinteTempoReal() {
+            db.ref(`usuarios/${userId}/proteses/fila`).on('value', snapshot => {
+                pacientes = snapshot.val() || [];
+                updateCounters();
+                renderFila();
+                updateSyncStatus('synced', 'Nuvem Ativa (Firebase)');
             });
         }
 
-        function salvarNo
+        function salvarNoFirebase() {
+            if (!userId) return;
+            updateSyncStatus('syncing', 'Salvando...');
+            db.ref(`usuarios/${userId}/proteses/fila`).set(pacientes)
+                .then(() => {
+                    updateSyncStatus('synced', 'Nuvem Ativa (Firebase)');
+                })
+                .catch(() => {
+                    updateSyncStatus('error', 'Erro ao salvar');
+                });
+        }
+
+        function updateCounters() {
+            document.getElementById('count-fila').innerText = pacientes.filter(p => !p.checked).length;
+        }
+
+        function updateSyncStatus(status, text) {
+            const dot = document.getElementById('sync-status');
+            const txt = document.getElementById('sync-text');
+            txt.innerText = text;
+            if (status === 'synced') {
+                dot.className = "inline-block w-2.5 h-2.5 rounded-full bg-emerald-500";
+            } else if (status === 'syncing') {
+                dot.className = "inline-block w-2.5 h-2.5 rounded-full bg-amber-500 animate-pulse";
+            } else if (status === 'error') {
+                dot.className = "inline-block w-2.5 h-2.5 rounded-full bg-rose-500";
+            } else {
+                dot.className = "inline-block w-2.5 h-2.5 rounded-full bg-slate-500";
+            }
+        }
+
+        function switchTab(tab) {
+            const btnCadastro = document.getElementById('btn-cadastro');
+            const btnFila = document.getElementById('btn-fila');
+            const tabCadastro = document.getElementById('tab-cadastro');
+            const tabFila = document.getElementById('tab-fila');
+
+            if (tab === 'cadastro') {
+                btnCadastro.className = "px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold transition bg-blue-600 text-white shadow";
+                btnFila.className = "px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold transition text-slate-400 hover:text-white";
+                tabCadastro.classList.remove('hidden');
+                tabFila.classList.add('hidden');
+            } else {
+                btnFila.className = "px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold transition bg-blue-600 text-white shadow";
+                btnCadastro.className = "px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold transition text-slate-400 hover:text-white";
+                tabFila.classList.remove('hidden');
+                tabCadastro.classList.add('hidden');
+                renderFila();
+            }
+        }
+
+        function renderFila() {
+            const tbody = document.getElementById('tbody-fila');
+            const query = document.getElementById('search-fila').value.toLowerCase();
+            tbody.innerHTML = '';
+
+            const sorted = [...pacientes].sort((a, b) => (a.checked === b.checked) ? 0 : a.checked ? 1 : -1);
+            const filtered = sorted.filter(p => p.nome.toLowerCase().includes(query) || (p.cpf && p.cpf.toLowerCase().includes(query)));
+
+            if (filtered.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="8" class="p-6 text-center text-slate-500">Nenhum paciente encontrado.</td></tr>`;
+                return;
+            }
+
+            filtered.forEach((p) => {
+                const originalIndex = pacientes.findIndex(item => item.id === p.id) + 1;
+                const tr = document.createElement('tr');
+                tr.className = `border-b border-slate-700/60 transition ${p.checked ? 'bg-slate-900/40 text-slate-500 line-through' : 'hover:bg-slate-700/30'}`;
+                tr.innerHTML = `
+                    <td class="p-3 text-center">
+                        <input type="checkbox" ${p.selected ? 'checked' : ''} onchange="toggleSelect(${p.id})" class="w-4 h-4 accent-emerald-600 rounded cursor-pointer">
+                    </td>
+                    <td class="p-3 text-center text-xs font-bold text-slate-400">${originalIndex}º</td>
+                    <td class="p-3 text-center">
+                        <input type="checkbox" ${p.checked ? 'checked' : ''} onchange="toggleCheck(${p.id})" class="w-5 h-5 accent-blue-600 rounded cursor-pointer">
+                    </td>
+                    <td class="p-4 font-medium ${p.checked ? 'text-slate-400' : 'text-slate-100'}">${p.nome}</td>
+                    <td class="p-4 whitespace-nowrap">${p.cpf || '-'}</td>
+                    <td class="p-4 whitespace-nowrap">${p.sus || '-'}</td>
+                    <td class="p-4 whitespace-nowrap">${p.telefone || '-'}</td>
+                    <td class="p-4 text-center">
+                        <button onclick="editPaciente(${p.id})" class="px-3 py-1.5 bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 border border-blue-500/30 rounded-lg text-xs font-semibold transition">✏️ Editar</button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function toggleCheck(id) {
+            const p = pacientes.find(item => item.id === id);
+            if (p) {
+                p.checked = !p.checked;
+                salvarNoFirebase();
+            }
+        }
+
+        function toggleSelect(id) {
+            const p = pacientes.find(item => item.id === id);
+            if (p) {
+                p.selected = !p.selected;
+                salvarNoFirebase();
+            }
+        }
+
+        function toggleSelectAll(select) {
+            const newState = select ? true : false;
+            pacientes.forEach(p => p.selected = newState);
+            salvarNoFirebase();
+            renderFila();
+        }
+
+        function handleFormSubmit(event) {
+            event.preventDefault();
+            const editId = document.getElementById('edit-id').value;
+            const nome = document.getElementById('input-nome').value.trim();
+            
+            if (!nome) return;
+
+            if (editId) {
+                const p = pacientes.find(item => item.id == editId);
+                if (p) {
+                    p.nome = nome;
+                    p.cpf = document.getElementById('input-cpf').value.trim();
+                    p.sus = document.getElementById('input-sus').value.trim();
+                    p.telefone = document.getElementById('input-tel').value.trim();
+                    p.obs = document.getElementById('input-obs').value.trim();
+                }
+                alert('Paciente atualizado!');
+            } else {
+                const novo = {
+                    id: Date.now(),
+                    nome: nome,
+                    cpf: document.getElementById('input-cpf').value.trim(),
+                    sus: document.getElementById('input-sus').value.trim(),
+                    telefone: document.getElementById('input-tel').value.trim(),
+                    obs: document.getElementById('input-obs').value.trim(),
+                    checked: false,
+                    selected: false
+                };
+                pacientes.push(novo);
+                alert('Paciente cadastrado!');
+            }
+
+            salvarNoFirebase();
+            resetForm();
+            switchTab('fila');
+        }
+
+        function editPaciente(id) {
+            const p = pacientes.find(item => item.id === id);
+            if (!p) return;
+
+            document.getElementById('edit-id').value = p.id;
+            document.getElementById('input-nome').value = p.nome;
+            document.getElementById('input-cpf').value = p.cpf || '';
+            document.getElementById('input-sus').value = p.sus || '';
+            document.getElementById('input-tel').value = p.telefone || '';
+            document.getElementById('input-obs').value = p.obs || '';
+
+            const currentIndex = pacientes.findIndex(item => item.id === id) + 1;
+            document.getElementById('input-posicao').value = currentIndex;
+            document.getElementById('input-posicao').max = pacientes.length;
+
+            document.getElementById('form-title').innerText = "Editar Paciente";
+            document.getElementById('btn-submit-form').innerText = "Atualizar Paciente";
+            document.getElementById('btn-cancel-edit').classList.remove('hidden');
+            document.getElementById('reorder-group').classList.remove('hidden');
+            document.getElementById('btn-delete-edit').classList.remove('hidden');
+
+            switchTab('cadastro');
+        }
+
+        function alterarPosicaoDireta() {
+            const editId = document.getElementById('edit-id').value;
+            if (!editId) return;
+
+            const novaPosicaoInput = parseInt(document.getElementById('input-posicao').value);
+            if (isNaN(novaPosicaoInput) || novaPosicaoInput < 1 || novaPosicaoInput > pacientes.length) {
+                alert(`Por favor, insira uma posição válida entre 1 e ${pacientes.length}.`);
+                return;
+            }
+
+            const currentIndex = pacientes.findIndex(item => item.id == editId);
+            if (currentIndex === -1) return;
+
+            const targetIndex = novaPosicaoInput - 1;
+
+            const [itemMovido] = pacientes.splice(currentIndex, 1);
+            pacientes.splice(targetIndex, 0, itemMovido);
+
+            salvarNoFirebase();
+            alert(`Paciente movido para a posição ${novaPosicaoInput} com sucesso!`);
+            switchTab('fila');
+        }
+
+        function excluirPacienteEditando() {
+            const editId = document.getElementById('edit-id').value;
+            if (!editId) return;
+
+            if (confirm("Tem certeza que deseja excluir este paciente?")) {
+                pacientes = pacientes.filter(item => item.id != editId);
+                salvarNoFirebase();
+                resetForm();
+                switchTab('fila');
+                alert('Paciente excluído!');
+            }
+        }
+
+        function resetForm() {
+            document.getElementById('form-cadastro').reset();
+            document.getElementById('edit-id').value = '';
+            document.getElementById('form-title').innerText = "Cadastrar Novo Paciente";
+            document.getElementById('btn-submit-form').innerText = "Salvar Paciente";
+            document.getElementById('btn-cancel-edit').classList.add('hidden');
+            document.getElementById('reorder-group').classList.add('hidden');
+            document.getElementById('btn-delete-edit').classList.add('hidden');
+        }
+
+        function exportSelectedCSV() {
+            const selecionados = pacientes.filter(p => p.selected);
+            if (selecionados.length === 0) {
+                alert("Nenhum paciente selecionado! Marque ao menos um na coluna 'Sel.'.");
+                return;
+            }
+
+            let csvContent = "\uFEFFStatus,Nome,CPF,SUS,Telefone,Observacoes\n";
+            selecionados.forEach(p => {
+                let row = [
+                    p.checked ? "CONCLUIDO" : "PENDENTE",
+                    `"${(p.nome || '').replace(/"/g, '""')}"`,
+                    `"${(p.cpf || '').replace(/"/g, '""')}"`,
+                    `"${(p.sus || '').replace(/"/g, '""')}"`,
+                    `"${(p.telefone || '').replace(/"/g, '""')}"`,
+                    `"${(p.obs || '').replace(/"/g, '""')}"`
+                ];
+                csvContent += row.join(",") + "\n";
+            });
+
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement("a");
+            link.setAttribute("href", url);
+            link.setAttribute("download", "pacientes_selecionados_protese.csv");
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+        }
+    </script>
+</body>
+</html>
