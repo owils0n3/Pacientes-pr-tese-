@@ -1,743 +1,625 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Controle de Próteses - Clínico</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    
-    <!-- Bibliotecas do Firebase -->
-    <script src="https://www.gstatic.com/firebasejs/10.4.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.4.0/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.4.0/firebase-database-compat.js"></script>
-
-    <!-- Biblioteca SheetJS para exportação em Excel -->
-    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-
-    <!-- Biblioteca HTML2PDF para exportação em PDF -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-
-    <style>
-        * { box-sizing: border-box; }
-        body { font-family: 'Inter', sans-serif; }
-        @media screen and (max-width: 768px) {
-            input, select, textarea { font-size: 16px !important; }
-        }
-
-        /* Folha A4 Oficial de Impressão/Exportação PDF (Calibrada para 1 página estrita) */
-        .folha-a4 {
-            width: 210mm;
-            height: 296mm;
-            max-height: 296mm;
-            background: white;
-            margin: 0 auto;
-            padding: 14mm 15mm;
-            color: black;
-            font-family: Arial, sans-serif;
-            display: flex;
-            flex-direction: column;
-            justify-content: flex-start;
-            overflow: hidden;
-        }
-        .tabela-pdf {
-            width: 100%;
-            table-layout: fixed;
-            border-collapse: collapse;
-        }
-        .tabela-pdf td, .tabela-pdf th {
-            border: 1px solid black;
-            padding: 5px 6px;
-            font-size: 11px;
-            line-height: 1.25;
-            word-break: break-word;
-        }
-        .tabela-pdf th {
-            font-weight: bold;
-            font-size: 11px;
-        }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Controle de Próteses - Clínico</title>
+<script src="[https://cdn.tailwindcss.com](https://cdn.tailwindcss.com)"></script>
+<link href="[https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap](https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap)" rel="stylesheet">
+<!-- Bibliotecas do Firebase -->
+<script src="[https://www.gstatic.com/firebasejs/10.4.0/firebase-app-compat.js](https://www.gstatic.com/firebasejs/10.4.0/firebase-app-compat.js)"></script>
+<script src="[https://www.gstatic.com/firebasejs/10.4.0/firebase-auth-compat.js](https://www.gstatic.com/firebasejs/10.4.0/firebase-auth-compat.js)"></script>
+<script src="[https://www.gstatic.com/firebasejs/10.4.0/firebase-database-compat.js](https://www.gstatic.com/firebasejs/10.4.0/firebase-database-compat.js)"></script>
+<!-- Biblioteca SheetJS para exportação em Excel -->
+<script src="[https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js](https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js)"></script>
+<!-- Biblioteca HTML2PDF para exportação em PDF -->
+<script src="[https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js](https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js)"></script>
+<style>
+* { box-sizing: border-box; }
+body { font-family: 'Inter', sans-serif; }
+@media screen and (max-width: 768px) {
+input, select, textarea { font-size: 16px !important; }
+}
+/* Folha A4 Oficial de Impressão/Exportação PDF (Calibrada para 1 página estrita) */
+.folha-a4 {
+width: 210mm;
+height: 296mm;
+max-height: 296mm;
+background: white;
+margin: 0 auto;
+padding: 14mm 15mm;
+color: black;
+font-family: Arial, sans-serif;
+display: flex;
+flex-direction: column;
+justify-content: flex-start;
+overflow: hidden;
+}
+.tabela-pdf {
+width: 100%;
+table-layout: fixed;
+border-collapse: collapse;
+}
+.tabela-pdf td, .tabela-pdf th {
+border: 1px solid black;
+padding: 5px 6px;
+font-size: 11px;
+line-height: 1.25;
+word-break: break-word;
+}
+.tabela-pdf th {
+font-weight: bold;
+font-size: 11px;
+}
+</style>
 </head>
 <body class="bg-slate-900 text-slate-100 min-h-screen flex flex-col">
-
-    <!-- Header / Navbar -->
-    <header class="bg-slate-800 border-b border-slate-700 px-4 sm:px-6 py-4 flex flex-col sm:flex-row justify-between items-center gap-4 shadow-md">
-        <div class="flex items-center space-x-3">
-            <div class="bg-blue-600 p-2 rounded-lg text-white font-bold text-xl">🦷</div>
-            <div>
-                <h1 class="text-base sm:text-lg font-bold tracking-tight">Gestão de Próteses Odontológicas</h1>
-                <div class="flex items-center gap-1.5 mt-0.5">
-                    <p class="text-xs text-slate-400 font-medium" id="sync-text">Sincronizando</p>
-                    <span id="sync-status" class="inline-block w-2.5 h-2.5 rounded-full bg-amber-500 animate-pulse"></span>
-                </div>
-            </div>
-        </div>
-
-        <div class="flex items-center gap-3">
-            <div class="flex space-x-1 bg-slate-900 p-1 rounded-xl border border-slate-700">
-                <button onclick="switchTab('cadastro')" id="btn-cadastro" class="px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold transition bg-blue-600 text-white shadow">
-                    ➕ Cadastro
-                </button>
-                <button onclick="switchTab('fila')" id="btn-fila" class="px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold transition text-slate-400 hover:text-white">
-                    📋 Fila (<span id="count-fila">0</span>)
-                </button>
-            </div>
-        </div>
-    </header>
-
-    <!-- Main Container -->
-    <main class="flex-1 max-w-6xl w-full mx-auto p-4 sm:p-6 space-y-6">
-
-        <!-- TAB 1: CADASTRO & EDIÇÃO -->
-        <section id="tab-cadastro" class="space-y-4">
-            <div class="bg-slate-800 border border-slate-700 rounded-2xl p-5 sm:p-8 shadow-xl max-w-2xl mx-auto">
-                <div class="mb-6 border-b border-slate-700 pb-4 flex justify-between items-center">
-                    <div>
-                        <h2 class="text-xl font-bold text-white" id="form-title">Cadastrar Novo Paciente</h2>
-                        <p class="text-xs sm:text-sm text-slate-400">Preencha os dados abaixo. Sincroniza automaticamente na nuvem.</p>
-                    </div>
-                </div>
-                
-                <form id="form-cadastro" onsubmit="handleFormSubmit(event)" class="space-y-4">
-                    <input type="hidden" id="edit-id">
-
-                    <!-- Campo de Reordenação por Posição Numérica -->
-                    <div id="reorder-group" class="hidden bg-slate-900/60 p-4 rounded-xl border border-slate-700 flex items-center justify-between gap-4">
-                        <div>
-                            <label class="block text-xs font-semibold text-blue-400 uppercase tracking-wider">Posição na Fila</label>
-                            <p class="text-xs text-slate-400">Digite o número da posição</p>
-                        </div>
-                        <div class="flex items-center gap-2">
-                            <input type="tel" inputmode="numeric" id="input-posicao" min="1" class="w-20 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-center text-lg font-bold text-white focus:outline-none focus:border-blue-500">
-                            <button type="button" onclick="alterarPosicaoDireta()" class="px-3 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-semibold transition">Mover</button>
-                        </div>
-                    </div>
-
-                    <div>
-                        <label class="block text-xs font-medium text-slate-300 mb-1">Nome Completo *</label>
-                        <input type="text" id="input-nome" required placeholder="Nome do paciente" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 focus:outline-none focus:border-blue-500 text-slate-100">
-                    </div>
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div>
-                            <label class="block text-xs font-medium text-slate-300 mb-1">CPF</label>
-                            <input type="tel" inputmode="numeric" id="input-cpf" maxlength="14" oninput="maskCPF(this)" placeholder="000.000.000-00" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 focus:outline-none focus:border-blue-500 text-slate-100">
-                        </div>
-                        <div>
-                            <label class="block text-xs font-medium text-slate-300 mb-1">SUS (CNS)</label>
-                            <input type="tel" inputmode="numeric" id="input-sus" maxlength="18" oninput="maskSUS(this)" placeholder="000 0000 0000 0000" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 focus:outline-none focus:border-blue-500 text-slate-100">
-                        </div>
-                    </div>
-                    <div>
-                        <label class="block text-xs font-medium text-slate-300 mb-1">Telefone / Celular</label>
-                        <input type="tel" inputmode="numeric" id="input-tel" maxlength="15" oninput="maskPhone(this)" placeholder="96 99100-8822" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 focus:outline-none focus:border-blue-500 text-slate-100">
-                    </div>
-                    <div>
-                        <label class="block text-xs font-medium text-slate-300 mb-1">Observações Clínicas</label>
-                        <textarea id="input-obs" rows="3" placeholder="Detalhes da prótese, arcada, etc." class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 focus:outline-none focus:border-blue-500 text-slate-100"></textarea>
-                    </div>
-
-                    <div class="flex items-center justify-between pt-4">
-                        <button type="button" id="btn-delete-edit" onclick="excluirPacienteEditando()" class="hidden px-4 py-3 rounded-xl text-sm font-medium bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30 transition">🗑️ Excluir Paciente</button>
-                        
-                        <div class="flex items-center gap-3 ml-auto">
-                            <button type="button" id="btn-cancel-edit" onclick="resetForm()" class="hidden px-5 py-3 rounded-xl text-sm font-medium bg-slate-700 hover:bg-slate-600 transition">Cancelar</button>
-                            <button type="submit" id="btn-submit-form" class="px-6 py-3 rounded-xl text-sm font-semibold bg-blue-600 hover:bg-blue-500 transition shadow-lg text-white">Salvar Paciente</button>
-                        </div>
-                    </div>
-                </form>
-            </div>
-        </section>
-
-        <!-- TAB 2: FILA DE PRÓTESES -->
-        <section id="tab-fila" class="hidden space-y-4">
-            <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 bg-slate-800/50 p-4 rounded-2xl border border-slate-700">
-                <div>
-                    <h2 class="text-xl font-bold">Fila de Próteses & Exportação</h2>
-                    <p class="text-sm text-slate-400">Selecione os pacientes para gerar a lista oficial em PDF ou exportar planilha.</p>
-                </div>
-                <div class="flex flex-wrap items-center gap-2 w-full lg:w-auto">
-                    <input type="text" id="search-fila" oninput="renderFila()" placeholder="Buscar paciente..." class="bg-slate-900 border border-slate-700 rounded-xl px-4 py-2 text-sm focus:outline-none focus:border-blue-500 flex-1 sm:flex-none sm:w-48">
-                    <button onclick="toggleSelectAll(true)" class="px-3 py-2 bg-slate-700 hover:bg-slate-600 rounded-xl text-xs font-medium transition">Selecionar Todos</button>
-
-                    <!-- Botão Principal: PDF Oficial -->
-                    <button onclick="exportSelectedPDF()" class="bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2 rounded-xl text-sm font-bold transition flex items-center gap-2 shadow-lg">
-                        <span>📄</span> Exportar PDF
-                    </button>
-
-                    <!-- Botão Auxiliar: Excel -->
-                    <button onclick="exportSelectedExcel()" title="Exportar Planilha Excel" class="bg-slate-700 hover:bg-slate-600 text-slate-300 px-3 py-2 rounded-xl text-xs font-medium transition flex items-center gap-1">
-                        <span>📊</span> Excel
-                    </button>
-                </div>
-            </div>
-
-            <!-- Tabela Fila -->
-            <div class="bg-slate-800 rounded-2xl border border-slate-700 overflow-hidden shadow-xl">
-                <div class="overflow-x-auto">
-                    <table class="w-full text-left border-collapse">
-                        <thead>
-                            <tr class="bg-slate-900/80 border-b border-slate-700 text-xs font-semibold uppercase tracking-wider text-slate-400">
-                                <th class="p-3 w-10 text-center">Sel.</th>
-                                <th class="p-3 w-12 text-center">Nº</th>
-                                <th class="p-3 w-16 text-center">Baixa</th>
-                                <th class="p-4">Nome do Paciente</th>
-                                <th class="p-4">CPF</th>
-                                <th class="p-4">SUS (CNS)</th>
-                                <th class="p-4">Telefone</th>
-                                <th class="p-4 text-center">Ações</th>
-                            </tr>
-                        </thead>
-                        <tbody id="tbody-fila" class="divide-y divide-slate-700/60 text-sm">
-                            <!-- Inserido via JavaScript -->
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </section>
-    </main>
-
-    <!-- CONTAINER DO PDF TOTALMENTE OCULTO (NÃO APARECE NA TELA E NÃO BUGA O APP) -->
-    <div id="pdf-render-wrapper" style="display: none;">
-        <div id="documento-pdf" class="folha-a4">
-            
-            <!-- Topo: Cabeçalho Oficial Idêntico ao Modelo Docx -->
-            <div class="text-center mb-6">
-                <!-- Brasão Oficial Embutido via Data URI JPEG Sólida -->
-                <img id="img-brasao-pdf" src="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHBYWICwgIyYnKSopGR8tMC0oMCUoKSj/2wBDAQcHBwoIChMKChMoGhYaKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCj/wAARCACWAJUDASIAAhEBAxEB/8QAHwAAAQUBAQEBAQEAAAAAAAAAAAECAwQFBgcICQoL/8QAtRAAAgEDAwIEAwUFBAQAAAF9AQIDAAQRBRIhMUEGE1FhByJxFDKBkaEII0KxwRVS0fAkM2JyggkKFhcYGRolJicoKSo0NTY3ODk6Q0RFRkdISUpTVFVWV1hZWmNkZWZnaGlqc3R1dnd4eXqDhIWGh4iJipKTlJWWl5iZmqKjpKWmp6ipqrKztLW2t7i5usLDxMXGx8jJytLT1NXW19jZ2uHi4+Tl5ufo6erx8vP09fb3+Pn6/8QAHwEAAwEBAQEBAQEBAQAAAAAAAAECAwQFBgcICQoL/8QAtREAAgECBAQDBAcFBAQAAQJ3AAECAxEEBSExBhJBUQdhcRMiMoEIFEKRobHBCSMzUvAVYnLRChYkNOEl8RcYGRomJygpKjU2Nzg5OkNERUZHSElKU1RVVldYWVpjZGVmZ2hpanN0dXZ3eHl6goOEhYaHiImKkpOUlZaXmJmaoqOkpaanqKmqsrO0tba3uLm6wsPExcbHyMnK0tPU1dbX2Nna4uPk5ebn6Onq8vP09fb3+Pn6/9oADAMBAAIRAxEAPwD6popkys0TqjlHIIDAA7T64Nee+GfFXiRH1K01rSU1GXTrlreaTTmCygYBVzCxGQykEFSe/HFRKootJ9TOdVQaT6notFc9b+M9All8mXUorS4HWG9BtnH/AAGQA/lW5b3ENwge3lSVD/EjBh+YpqUZbMqM4y+F3JaKM1Bd3ltZxmS7uIoIx1aVwg/M1Vyr2J6K5ibxxozSGHTJJ9XuAceVtsLT/m4+QfiwqJj4p1o7QsHh6zPViVubs/T/AJZp/wCP1n筛fj6RzHVRfw7Onjrav4K62ivK4vGGv6x8SLTw5Y6y1lp2r6Xc3unSWdhFc3EUkcoC+c0ilUBjJ4XnOT3xU2k+JfE994V0m4v9W8SaJq02j317ctcWlmYJZ40V49hkiZdhDEnAyOMYPNZwxEJOyM44qnJ2SZ6vRXm/w58S6pr2k6HfeJPEWqWGpXVhFcyacNOtoLVmZRkLI8YkJbGQAxPPQYxWzpviK/l8f3em3d2q6d/Ytvf2sLooO5ppEZtwGQcAcE9K0VT3eaKuaRrxcOdK6OtorzTwV401e6tPCX9v3xM9zr15pt04jjRZEiWcxkgLwT5a5wcck47Vq6b4qvrjx7dW9/d3GmaTFcNb2aXenr9lv8AG4B4blDlXJUfK4x905BOabqxsjSOIg0nuenUVwvhzxLqV54z1a11O7msbK1v5LW3srq2jWK6iVQQ8U4yWY9SpxjIA7mtzwrrV9qut+ILe4s7hLG0uFjtrqQx7JVK5wArFgfXIB9qcakZNoVOtGptdHQ0UUVZuFeQ3Xw8+ILeO9f8Raf4p8K2VtrGoxTyWbaJcTTNBED5UTTrcqpK5J+WPq2Sc169RUThGfxImcIz+JGJoWh6vo9/eyXuvT6va3L7o4p7eONoDgD7yY3D3IznPOOK26KKqMbKxpGKirIKKKKoYVzN14L8N3eopqFxpUbXSFjveV9rkjBLJnaxxxkgnH0FdNRSlFNWZEoqa95HK694A8K63ZtZ3WjW8dtuJEVvm3TnuwjK7vowxXn/ijwb4A0i2i0Hwrp2pX3ibVlOm6daXuu3E0UbOuHkeN5G2oi5JKjOMjHNex6xqtro2l3mo3zslrawtNKyrkhVGScAgn8K+Z/HnxB0nx34w8MeK9Bv7u18O+Gr9Lq90tLWX9+Vky0v2hQYzHkKNo5JAJzjFeTmuYYbCUVKtG8nbklvJvpFffr0SbdrHVCi2/dk7+p6L448K2Xhrw/4W0bQW03SLrS7y3Om6m9sHkthMrb5C+fMYsrsCCwyN3Xv6RvD6haS6HLPa38coi0+bTPKknV2O1Xk24IB9+9ddXkXj/6M3hP/sc7L/0oWumL5m7nRh17zTPV/EmmNrPhzVtNRwj3dnLbo7cBWdCuf1rz/4e+N9Qh0bwz4d1fQtYsfEFq0dlqD3GnTLbYhXb5izkCNgyqD945LADvXptcR8W/HMXgLwrdXkWraXpmpSQyfYjqs6wwtIFzuYsc7VyCeO5FZ1JOEuZfccWIlOnJVKbttffr8jvdwxnPFec/Ezxle2XjbwZ4S0zUItKOuyXMt3q0sYl+ywQJuO1T8rMxwBkcZrM+EnxAvfEOsXfh7xD4g0bU/E0NlFfT22jWjwQ/Z3baHRmZi/OARkFe45rx74kfEPw9Z/HrxFr3ia+uoNG8ES22n2NvY6bNdTXN7MokmYiJCAqqyj5iOuMc1wYvG0o0vaQle2v9f15Hl47MMNCj7WMublvfW0dFfvr6a/gfZ+gz3dxo9tPqMNtBfOjPPBaTeckbE52hsDOARzjmrlvOk8KTRNujkUMrf3geQaseLvEXgzxD8IfEPibQ703mj3GiTzWtw0EsLuog3fcdVYHpyRXhvhj4n+Mv8AhH/Duh/CXw7Ld+HtH0q3W+1jWLVp1lby13i3QhWcq2RuYkE7sCu+eITtJq6fkduIx6jySSumup9NVwPxi8VXvhDwVIdH8ubXdQlh07TbVnyJZ5WwM8HhVDN9FNfOfxS+L3iXW/BnhbxF4L8d6lo+pa9rkdnY6H/ZcO67iWQu0MnmIXA2xjcWbALDPFenfEXXb7w/rfwi8ZeLrW8spLWe4tNYu/sUjW1u8sUaI77Qdqb9wDHgbsHisquKhONrNPXf/gHn1cwpVKTSUlJptbfg+x7X4W0m50TRILS91W81e7HzzXl3JueRycnHoPYYA7CtOivnrS/jLqlh48g8T63qF5N8OdW16fQ7CGO0RbXzI1O2YykbixlVlyDgBgMVU60KKV1p1Oj6xHDQjBrbZf1+bPoWisLQ/G3hfX9ROn6T4g03Ub0Reebezu0kkCZxnaD64qj4w+IngzwfKkOt+ILLTbpxvW3mk3SkY67ByAfXGKp1YpdS3Wptcrlp6nf0V55o/x0+GGv6vbaXZ+LrJ765k8qKKVXj3t6AsACfYc16HXNCrCquammjGlWp11zUZKXo0woooqzoCiiigAooooAKKKKACiiigAooooAKKKKACiivG/FfxN8Y6r411rwz8NNH029n0KCOTU7rVZmVTIy7vKQKVO7BHXjkZIyKwq1oUldmdWrGl8R7JS15D4D+LOrav4n1fwx410aHQtc0+wTUzJZyeZFNA2Ax9cg5z04wcDmvTrHxl4WvrZ7u08TaPc20bbXmi1CFkU9cEhiByOvvRGtCSuilWpveRsUVV07UtP1SzS802+try1fOyW2mWRGwcHDRkg88VOzBVLHgAZJqjVO4tFeM+Gfit4v8efEK+tPCvhvTrrwno9+NPv8AUbidkmaTAzsXJUjk89eO2ea9jXp71nRrRrJum9iKVWNW7g9goooraNAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigD//2Z" alt="Brasão de Laranjal do Jari" class="h-16 mx-auto mb-3">
-                <h2 class="text-[12px] font-bold leading-tight uppercase">Estado do Amapá</h2>
-                <h2 class="text-[12px] font-bold leading-tight uppercase">Prefeitura de Laranjal do Jari</h2>
-                <h2 class="text-[12px] font-bold leading-tight uppercase">Secretaria Municipal de Saúde</h2>
-                <h2 class="text-[12px] font-bold leading-tight uppercase">Fundo Municipal de Saúde</h2>
-                <h2 class="text-[12px] font-bold leading-tight uppercase">Coordenação de Atenção Básica</h2>
-                
-                <h3 class="text-[13px] font-bold underline mt-6 mb-3 uppercase tracking-wide">Lista de Pacientes para Prótese</h3>
-            </div>
-
-            <!-- Tabela Oficial de Pacientes (4 Colunas Travadas) -->
-            <table class="tabela-pdf">
-                <thead>
-                    <tr>
-                        <th style="width: 42%;" class="text-left">NOME</th>
-                        <th style="width: 19%;" class="text-center">CPF</th>
-                        <th style="width: 19%;" class="text-center">SUS</th>
-                        <th style="width: 20%;" class="text-center">CONTATO</th>
-                    </tr>
-                </thead>
-                <tbody id="corpo-tabela-pdf">
-                    <!-- Linhas geradas dinamicamente com os pacientes selecionados -->
-                </tbody>
-            </table>
-
-        </div>
-    </div>
-
-    <!-- Modal Customizado Estilo iOS -->
-    <div id="custom-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm hidden items-center justify-center p-4 z-[100] opacity-0 transition-opacity duration-200">
-        <div id="custom-modal-content" class="bg-slate-800 border border-slate-700 rounded-2xl max-w-sm w-full p-6 shadow-2xl transform scale-95 transition-transform duration-200">
-            <h3 class="text-lg font-bold text-white text-center mb-2" id="modal-title">Título</h3>
-            <p class="text-sm text-slate-300 text-center mb-6" id="modal-message">Mensagem</p>
-            <div class="flex justify-center gap-3" id="modal-actions">
-                <!-- Botões gerados via JS -->
-            </div>
-        </div>
-    </div>
-
-    <script>
-        const firebaseConfig = {
-            apiKey: "AIzaSyD7vdvBDk6k48AlRDQpdrhOxG212MovmrM",
-            authDomain: "rocha-batista.firebaseapp.com",
-            databaseURL: "https://rocha-batista-default-rtdb.firebaseio.com",
-            projectId: "rocha-batista",
-            storageBucket: "rocha-batista.firebasestorage.app",
-            messagingSenderId: "737568409775",
-            appId: "1:737568409775:web:41b6eefa0b18199886ac5a"
-        };
-
-        if (!firebase.apps.length) {
-            firebase.initializeApp(firebaseConfig);
-        }
-        const auth = firebase.auth();
-        const db = firebase.database();
-
-        const DEFAULT_EMAIL = "rochabatista@wilson.com";
-        const DEFAULT_PASS = "wrzt01";
-
-        let userId = null;
-        let pacientes = [];
-        let modalCallback = null;
-
-        // Login Silencioso
-        auth.signInWithEmailAndPassword(DEFAULT_EMAIL, DEFAULT_PASS).catch(err => {
-            updateSyncStatus('error', 'Erro');
-        });
-
-        auth.onAuthStateChanged(user => {
-            if (user) {
-                userId = user.uid;
-                carregarDadosFirebase();
-            }
-        });
-
-        // Controle do Modal Customizado
-        function showModal(title, message, type = 'alert', callback = null) {
-            document.getElementById('modal-title').innerText = title;
-            document.getElementById('modal-message').innerText = message;
-            const actions = document.getElementById('modal-actions');
-            modalCallback = callback;
-            
-            if (type === 'confirm') {
-                actions.innerHTML = `
-                    <button onclick="closeModal(false)" class="flex-1 px-4 py-3 rounded-xl text-sm font-semibold bg-slate-700 hover:bg-slate-600 transition text-white">Cancelar</button>
-                    <button onclick="closeModal(true)" class="flex-1 px-4 py-3 rounded-xl text-sm font-bold bg-rose-600 hover:bg-rose-500 transition text-white shadow-lg">Excluir</button>
-                `;
-            } else {
-                actions.innerHTML = `
-                    <button onclick="closeModal(true)" class="w-full px-4 py-3 rounded-xl text-sm font-bold bg-blue-600 hover:bg-blue-500 transition text-white shadow-lg">OK</button>
-                `;
-            }
-            
-            const modal = document.getElementById('custom-modal');
-            const content = document.getElementById('custom-modal-content');
-            modal.classList.remove('hidden');
-            modal.classList.add('flex');
-            
-            setTimeout(() => {
-                modal.classList.remove('opacity-0');
-                content.classList.remove('scale-95');
-            }, 10);
-        }
-
-        function closeModal(result) {
-            const modal = document.getElementById('custom-modal');
-            const content = document.getElementById('custom-modal-content');
-            
-            modal.classList.add('opacity-0');
-            content.classList.add('scale-95');
-            
-            setTimeout(() => {
-                modal.classList.add('hidden');
-                modal.classList.remove('flex');
-                if (modalCallback) modalCallback(result);
-            }, 200);
-        }
-
-        function formatCPFString(v) {
-            if (!v) return "";
-            v = v.replace(/\D/g, "");
-            if (v.length > 11) v = v.slice(0, 11);
-            if (v.length > 9) return v.replace(/^(\d{3})(\d{3})(\d{3})(\d{2}).*$/, "$1.$2.$3-$4");
-            if (v.length > 6) return v.replace(/^(\d{3})(\d{3})(\d{0,3}).*$/, "$1.$2.$3");
-            if (v.length > 3) return v.replace(/^(\d{3})(\d{0,3}).*$/, "$1.$2");
-            return v;
-        }
-
-        function formatPhoneString(v) {
-            if (!v) return "";
-            v = v.replace(/\D/g, "");
-            if (v.length > 11) v = v.slice(0, 11);
-            if (v.length > 6) return v.replace(/^(\d{2})(\d{4,5})(\d{4}).*$/, "$1 $2-$3");
-            if (v.length > 2) return v.replace(/^(\d{2})(\d{0,5}).*$/, "$1 $2");
-            return v;
-        }
-
-        function formatSUSString(v) {
-            if (!v) return "";
-            v = v.replace(/\D/g, "");
-            if (v.length > 15) v = v.slice(0, 15);
-            if (v.length > 11) return v.replace(/^(\d{3})(\d{4})(\d{4})(\d{1,4}).*/, "$1 $2 $3 $4");
-            if (v.length > 7) return v.replace(/^(\d{3})(\d{4})(\d{1,4}).*/, "$1 $2 $3");
-            if (v.length > 3) return v.replace(/^(\d{3})(\d{1,4}).*/, "$1 $2");
-            return v;
-        }
-
-        function maskCPF(input) { input.value = formatCPFString(input.value); }
-        function maskPhone(input) { input.value = formatPhoneString(input.value); }
-        function maskSUS(input) { input.value = formatSUSString(input.value); }
-
-        function carregarDadosFirebase() {
-            updateSyncStatus('syncing', 'Sincronizando');
-            db.ref(`usuarios/${userId}/proteses/fila`).on('value', snapshot => {
-                pacientes = snapshot.val() || [];
-                updateCounters();
-                renderFila();
-                updateSyncStatus('synced', 'Ativo');
-            }, error => {
-                updateSyncStatus('error', 'Erro');
-            });
-        }
-
-        function salvarNoFirebase() {
-            if (!userId) return;
-            updateSyncStatus('syncing', 'Sincronizando');
-            db.ref(`usuarios/${userId}/proteses/fila`).set(pacientes)
-                .then(() => {
-                    updateSyncStatus('synced', 'Ativo');
-                })
-                .catch(() => {
-                    updateSyncStatus('error', 'Erro');
-                });
-        }
-
-        function updateCounters() {
-            document.getElementById('count-fila').innerText = pacientes.filter(p => !p.checked).length;
-        }
-
-        function updateSyncStatus(status, text) {
-            const dot = document.getElementById('sync-status');
-            const txt = document.getElementById('sync-text');
-            txt.innerText = text;
-            
-            dot.classList.remove('bg-emerald-500', 'bg-amber-500', 'bg-rose-500', 'bg-slate-500', 'animate-pulse');
-            
-            if (status === 'synced') {
-                dot.classList.add('bg-emerald-500');
-            } else if (status === 'syncing') {
-                dot.classList.add('bg-amber-500', 'animate-pulse');
-            } else if (status === 'error') {
-                dot.classList.add('bg-rose-500');
-            } else {
-                dot.classList.add('bg-slate-500');
-            }
-        }
-
-        function switchTab(tab) {
-            const btnCadastro = document.getElementById('btn-cadastro');
-            const btnFila = document.getElementById('btn-fila');
-            const tabCadastro = document.getElementById('tab-cadastro');
-            const tabFila = document.getElementById('tab-fila');
-
-            if (tab === 'cadastro') {
-                btnCadastro.className = "px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold transition bg-blue-600 text-white shadow";
-                btnFila.className = "px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold transition text-slate-400 hover:text-white";
-                tabCadastro.classList.remove('hidden');
-                tabFila.classList.add('hidden');
-            } else {
-                btnFila.className = "px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold transition bg-blue-600 text-white shadow";
-                btnCadastro.className = "px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold transition text-slate-400 hover:text-white";
-                tabFila.classList.remove('hidden');
-                tabCadastro.classList.add('hidden');
-                renderFila();
-            }
-        }
-
-        function renderFila() {
-            const tbody = document.getElementById('tbody-fila');
-            const query = document.getElementById('search-fila').value.toLowerCase();
-            tbody.innerHTML = '';
-
-            const sorted = [...pacientes].sort((a, b) => (a.checked === b.checked) ? 0 : a.checked ? 1 : -1);
-            const filtered = sorted.filter(p => p.nome.toLowerCase().includes(query) || (p.cpf && p.cpf.toLowerCase().includes(query)));
-
-            if (filtered.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="8" class="p-6 text-center text-slate-500">Nenhum paciente encontrado.</td></tr>`;
-                return;
-            }
-
-            filtered.forEach((p) => {
-                const originalIndex = pacientes.findIndex(item => item.id === p.id) + 1;
-                const tr = document.createElement('tr');
-                tr.className = `border-b border-slate-700/60 transition ${p.checked ? 'bg-slate-900/40 text-slate-500 line-through' : 'hover:bg-slate-700/30'}`;
-                tr.innerHTML = `
-                    <td class="p-3 text-center">
-                        <input type="checkbox" ${p.selected ? 'checked' : ''} onchange="toggleSelect(${p.id})" class="w-4 h-4 accent-emerald-600 rounded cursor-pointer">
-                    </td>
-                    <td class="p-3 text-center text-xs font-bold text-slate-400">${originalIndex}º</td>
-                    <td class="p-3 text-center">
-                        <input type="checkbox" ${p.checked ? 'checked' : ''} onchange="toggleCheck(${p.id})" class="w-5 h-5 accent-blue-600 rounded cursor-pointer">
-                    </td>
-                    <td class="p-4 font-medium ${p.checked ? 'text-slate-400' : 'text-slate-100'}">${p.nome}</td>
-                    <td class="p-4 whitespace-nowrap">${p.cpf || '-'}</td>
-                    <td class="p-4 whitespace-nowrap">${p.sus || '-'}</td>
-                    <td class="p-4 whitespace-nowrap">${p.telefone || '-'}</td>
-                    <td class="p-4 text-center">
-                        <button onclick="editPaciente(${p.id})" class="px-3 py-1.5 bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 border border-blue-500/30 rounded-lg text-xs font-semibold transition">✏️ Editar</button>
-                    </td>
-                `;
-                tbody.appendChild(tr);
-            });
-        }
-
-        function toggleCheck(id) {
-            const p = pacientes.find(item => item.id === id);
-            if (p) {
-                p.checked = !p.checked;
-                salvarNoFirebase();
-            }
-        }
-
-        function toggleSelect(id) {
-            const p = pacientes.find(item => item.id === id);
-            if (p) {
-                p.selected = !p.selected;
-                salvarNoFirebase();
-            }
-        }
-
-        function toggleSelectAll(select) {
-            const newState = select ? true : false;
-            pacientes.forEach(p => p.selected = newState);
-            salvarNoFirebase();
-            renderFila();
-        }
-
-        function handleFormSubmit(event) {
-            event.preventDefault();
-            const editId = document.getElementById('edit-id').value;
-            const nome = document.getElementById('input-nome').value.trim();
-            
-            if (!nome) return;
-
-            if (editId) {
-                const p = pacientes.find(item => item.id == editId);
-                if (p) {
-                    p.nome = nome;
-                    p.cpf = document.getElementById('input-cpf').value.trim();
-                    p.sus = document.getElementById('input-sus').value.trim();
-                    p.telefone = document.getElementById('input-tel').value.trim();
-                    p.obs = document.getElementById('input-obs').value.trim();
-                }
-                showModal('Sucesso!', 'Paciente atualizado com sucesso.', 'alert', () => {
-                    salvarNoFirebase();
-                    resetForm();
-                    switchTab('fila');
-                });
-            } else {
-                const novo = {
-                    id: Date.now(),
-                    nome: nome,
-                    cpf: document.getElementById('input-cpf').value.trim(),
-                    sus: document.getElementById('input-sus').value.trim(),
-                    telefone: document.getElementById('input-tel').value.trim(),
-                    obs: document.getElementById('input-obs').value.trim(),
-                    checked: false,
-                    selected: false
-                };
-                pacientes.push(novo);
-                showModal('Sucesso!', 'Paciente cadastrado com sucesso na fila.', 'alert', () => {
-                    salvarNoFirebase();
-                    resetForm();
-                    switchTab('fila');
-                });
-            }
-        }
-
-        function editPaciente(id) {
-            const p = pacientes.find(item => item.id === id);
-            if (!p) return;
-
-            document.getElementById('edit-id').value = p.id;
-            document.getElementById('input-nome').value = p.nome;
-            document.getElementById('input-cpf').value = p.cpf || '';
-            document.getElementById('input-sus').value = p.sus || '';
-            document.getElementById('input-tel').value = p.telefone || '';
-            document.getElementById('input-obs').value = p.obs || '';
-
-            const currentIndex = pacientes.findIndex(item => item.id === id) + 1;
-            document.getElementById('input-posicao').value = currentIndex;
-            document.getElementById('input-posicao').max = pacientes.length;
-
-            document.getElementById('form-title').innerText = "Editar Paciente";
-            document.getElementById('btn-submit-form').innerText = "Atualizar Paciente";
-            document.getElementById('btn-cancel-edit').classList.remove('hidden');
-            document.getElementById('reorder-group').classList.remove('hidden');
-            document.getElementById('btn-delete-edit').classList.remove('hidden');
-
-            switchTab('cadastro');
-        }
-
-        function alterarPosicaoDireta() {
-            const editId = document.getElementById('edit-id').value;
-            if (!editId) return;
-
-            const novaPosicaoInput = parseInt(document.getElementById('input-posicao').value);
-            if (isNaN(novaPosicaoInput) || novaPosicaoInput < 1 || novaPosicaoInput > pacientes.length) {
-                showModal('Posição Inválida', `Por favor, insira um número entre 1 e ${pacientes.length}.`, 'alert');
-                return;
-            }
-
-            const currentIndex = pacientes.findIndex(item => item.id == editId);
-            if (currentIndex === -1) return;
-
-            const targetIndex = novaPosicaoInput - 1;
-
-            const [itemMovido] = pacientes.splice(currentIndex, 1);
-            pacientes.splice(targetIndex, 0, itemMovido);
-
-            salvarNoFirebase();
-            showModal('Reordenado', `Paciente movido para a posição ${novaPosicaoInput} com sucesso!`, 'alert', () => {
-                switchTab('fila');
-            });
-        }
-
-        function excluirPacienteEditando() {
-            const editId = document.getElementById('edit-id').value;
-            if (!editId) return;
-
-            showModal('Excluir Paciente', 'Tem certeza que deseja excluir este paciente da fila? Esta ação não pode ser desfeita.', 'confirm', (confirmado) => {
-                if (confirmado) {
-                    pacientes = pacientes.filter(item => item.id != editId);
-                    salvarNoFirebase();
-                    resetForm();
-                    switchTab('fila');
-                    showModal('Excluído', 'Paciente removido com sucesso.', 'alert');
-                }
-            });
-        }
-
-        function resetForm() {
-            document.getElementById('form-cadastro').reset();
-            document.getElementById('edit-id').value = '';
-            document.getElementById('form-title').innerText = "Cadastrar Novo Paciente";
-            document.getElementById('btn-submit-form').innerText = "Salvar Paciente";
-            document.getElementById('btn-cancel-edit').classList.add('hidden');
-            document.getElementById('reorder-group').classList.add('hidden');
-            document.getElementById('btn-delete-edit').classList.add('hidden');
-        }
-
-        function baixarArquivoFallback(blob, nomeArquivo) {
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = nomeArquivo;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            setTimeout(() => URL.revokeObjectURL(url), 2000);
-        }
-
-        // ============================================================================
-        // NOVO GERADOR OFICIAL DE LISTA EM PDF (1 PÁGINA A4 COM BRASÃO EMBUTIDO)
-        // ============================================================================
-        async function exportSelectedPDF() {
-            const selecionados = pacientes.filter(p => p.selected);
-            if (selecionados.length === 0) {
-                showModal('Nenhum selecionado', "Selecione ao menos um paciente na coluna 'Sel.' para gerar a lista.", 'alert');
-                return;
-            }
-
-            // 1. Popula a tabela com os pacientes selecionados
-            const tbody = document.getElementById('corpo-tabela-pdf');
-            let html = '';
-            selecionados.forEach(p => {
-                html += `
-                    <tr>
-                        <td class="font-semibold uppercase">${p.nome || '-'}</td>
-                        <td class="text-center font-medium">${p.cpf || '-'}</td>
-                        <td class="text-center font-medium">${p.sus || '-'}</td>
-                        <td class="text-center font-medium">${p.telefone || '-'}</td>
-                    </tr>
-                `;
-            });
-            tbody.innerHTML = html;
-
-            // 2. Define o nome do arquivo padrão com a data de hoje
-            const hoje = new Date();
-            const dia = String(hoje.getDate()).padStart(2, '0');
-            const mes = String(hoje.getMonth() + 1).padStart(2, '0');
-            const ano = hoje.getFullYear();
-            const dataStr = `${dia}-${mes}-${ano}`;
-            const nomeArquivo = `Lista de Pacientes para Prótese - Dr. Wilson (${dataStr}).pdf`;
-
-            // 3. Exibe temporariamente a folha para renderização sem interferir no app
-            const wrapper = document.getElementById('pdf-render-wrapper');
-            const elemento = document.getElementById('documento-pdf');
-
-            wrapper.style.display = 'block';
-            wrapper.style.position = 'fixed';
-            wrapper.style.top = '0';
-            wrapper.style.left = '0';
-            wrapper.style.zIndex = '99999';
-
-            window.scrollTo(0, 0);
-
-            const opt = {
-                margin:       0,
-                filename:     nomeArquivo,
-                image:        { type: 'jpeg', quality: 0.98 },
-                html2canvas:  { 
-                    scale: 2, 
-                    useCORS: true
-                },
-                jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
-            };
-
-            try {
-                const pdf = await html2pdf().set(opt).from(elemento).toPdf().get('pdf');
-
-                // Mantém estritamente em 1 página
-                var totalPages = pdf.internal.getNumberOfPages();
-                while (totalPages > 1) {
-                    pdf.deletePage(totalPages);
-                    totalPages--;
-                }
-
-                const blob = pdf.output('blob');
-                const file = new File([blob], nomeArquivo, { type: 'application/pdf' });
-
-                // Compartilhamento nativo limpo do iOS (sem links de texto)
-                if (navigator.canShare && navigator.canShare({ files: [file] })) {
-                    try {
-                        await navigator.share({
-                            files: [file]
-                        });
-                    } catch (err) {
-                        if (err.name !== 'AbortError') {
-                            baixarArquivoFallback(blob, nomeArquivo);
-                        }
-                    }
-                } else {
-                    baixarArquivoFallback(blob, nomeArquivo);
-                }
-            } catch (err) {
-                console.error(err);
-                showModal('Erro ao Exportar', 'Ocorreu um erro ao gerar o PDF. Tente novamente.', 'alert');
-            } finally {
-                // Oculta novamente o wrapper do PDF para manter a tela 100% limpa
-                wrapper.style.display = 'none';
-            }
-        }
-
-        // ============================================================================
-        // EXPORTADOR SECUNDÁRIO EM EXCEL (.XLSX)
-        // ============================================================================
-        async function exportSelectedExcel() {
-            const selecionados = pacientes.filter(p => p.selected);
-            if (selecionados.length === 0) {
-                showModal('Nenhum selecionado', "Selecione ao menos um paciente na coluna 'Sel.' para exportar.", 'alert');
-                return;
-            }
-
-            const dadosPlanilha = selecionados.map(p => ({
-                "Status": p.checked ? "CONCLUIDO" : "PENDENTE",
-                "Nome": p.nome || "",
-                "CPF": p.cpf || "",
-                "SUS (CNS)": p.sus || "",
-                "Telefone": p.telefone || "",
-                "Observacoes": p.obs || ""
-            }));
-
-            const planilha = XLSX.utils.json_to_sheet(dadosPlanilha);
-            const pastaDeTrabalho = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(pastaDeTrabalho, planilha, "Proteses");
-
-            const excelBuffer = XLSX.write(pastaDeTrabalho, { bookType: 'xlsx', type: 'array' });
-            const blob = new Blob([excelBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-            const nomeArquivo = `pacientes_protese_${new Date().toISOString().split('T')[0]}.xlsx`;
-
-            try {
-                const arquivo = new File([blob], nomeArquivo, { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-                if (navigator.canShare && navigator.canShare({ files: [arquivo] })) {
-                    await navigator.share({
-                        files: [arquivo]
-                    });
-                    return;
-                }
-            } catch (err) {
-                if (err.name === 'AbortError') return;
-            }
-
-            baixarArquivoFallback(blob, nomeArquivo);
-        }
-    </script>
+<!-- Header / Navbar -->
+<header class="bg-slate-800 border-b border-slate-700 px-4 sm:px-6 py-4 flex flex-col sm:flex-row justify-between items-center gap-4 shadow-md">
+<div class="flex items-center space-x-3">
+<div class="bg-blue-600 p-2 rounded-lg text-white font-bold text-xl">🦷</div>
+<div>
+<h1 class="text-base sm:text-lg font-bold tracking-tight">Gestão de Próteses Odontológicas</h1>
+<div class="flex items-center gap-1.5 mt-0.5">
+<p class="text-xs text-slate-400 font-medium" id="sync-text">Sincronizando</p>
+<span id="sync-status" class="inline-block w-2.5 h-2.5 rounded-full bg-amber-500 animate-pulse"></span>
+</div>
+</div>
+</div>
+<div class="flex items-center gap-3">
+<div class="flex space-x-1 bg-slate-900 p-1 rounded-xl border border-slate-700">
+<button onclick="switchTab('cadastro')" id="btn-cadastro" class="px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold transition bg-blue-600 text-white shadow">
+➕ Cadastro
+</button>
+<button onclick="switchTab('fila')" id="btn-fila" class="px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold transition text-slate-400 hover:text-white">
+📋 Fila (<span id="count-fila">0</span>)
+</button>
+</div>
+</div>
+</header>
+<!-- Main Container -->
+<main class="flex-1 max-w-6xl w-full mx-auto p-4 sm:p-6 space-y-6">
+<!-- TAB 1: CADASTRO & EDIÇÃO -->
+<section id="tab-cadastro" class="space-y-4">
+<div class="bg-slate-800 border border-slate-700 rounded-2xl p-5 sm:p-8 shadow-xl max-w-2xl mx-auto">
+<div class="mb-6 border-b border-slate-700 pb-4 flex justify-between items-center">
+<div>
+<h2 class="text-xl font-bold text-white" id="form-title">Cadastrar Novo Paciente</h2>
+<p class="text-xs sm:text-sm text-slate-400">Preencha os dados abaixo. Sincroniza automaticamente na nuvem.</p>
+</div>
+</div>
+<form id="form-cadastro" onsubmit="handleFormSubmit(event)" class="space-y-4">
+<input type="hidden" id="edit-id">
+<!-- Campo de Reordenação por Posição Numérica -->
+<div id="reorder-group" class="hidden bg-slate-900/60 p-4 rounded-xl border border-slate-700 flex items-center justify-between gap-4">
+<div>
+<label class="block text-xs font-semibold text-blue-400 uppercase tracking-wider">Posição na Fila</label>
+<p class="text-xs text-slate-400">Digite o número da posição</p>
+</div>
+<div class="flex items-center gap-2">
+<input type="tel" inputmode="numeric" id="input-posicao" min="1" class="w-20 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-center text-lg font-bold text-white focus:outline-none focus:border-blue-500">
+<button type="button" onclick="alterarPosicaoDireta()" class="px-3 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-semibold transition">Mover</button>
+</div>
+</div>
+<div>
+<label class="block text-xs font-medium text-slate-300 mb-1">Nome Completo *</label>
+<input type="text" id="input-nome" required placeholder="Nome do paciente" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 focus:outline-none focus:border-blue-500 text-slate-100">
+</div>
+<div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+<div>
+<label class="block text-xs font-medium text-slate-300 mb-1">CPF</label>
+<input type="tel" inputmode="numeric" id="input-cpf" maxlength="14" oninput="maskCPF(this)" placeholder="000.000.000-00" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 focus:outline-none focus:border-blue-500 text-slate-100">
+</div>
+<div>
+<label class="block text-xs font-medium text-slate-300 mb-1">SUS (CNS)</label>
+<input type="tel" inputmode="numeric" id="input-sus" maxlength="18" oninput="maskSUS(this)" placeholder="000 0000 0000 0000" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 focus:outline-none focus:border-blue-500 text-slate-100">
+</div>
+</div>
+<div>
+<label class="block text-xs font-medium text-slate-300 mb-1">Telefone / Celular</label>
+<input type="tel" inputmode="numeric" id="input-tel" maxlength="15" oninput="maskPhone(this)" placeholder="96 99100-8822" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 focus:outline-none focus:border-blue-500 text-slate-100">
+</div>
+<div>
+<label class="block text-xs font-medium text-slate-300 mb-1">Observações Clínicas</label>
+<textarea id="input-obs" rows="3" placeholder="Detalhes da prótese, arcada, etc." class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 focus:outline-none focus:border-blue-500 text-slate-100"></textarea>
+</div>
+<div class="flex items-center justify-between pt-4">
+<button type="button" id="btn-delete-edit" onclick="excluirPacienteEditando()" class="hidden px-4 py-3 rounded-xl text-sm font-medium bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30 transition">🗑️ Excluir Paciente</button>
+<div class="flex items-center gap-3 ml-auto">
+<button type="button" id="btn-cancel-edit" onclick="resetForm()" class="hidden px-5 py-3 rounded-xl text-sm font-medium bg-slate-700 hover:bg-slate-600 transition">Cancelar</button>
+<button type="submit" id="btn-submit-form" class="px-6 py-3 rounded-xl text-sm font-semibold bg-blue-600 hover:bg-blue-500 transition shadow-lg text-white">Salvar Paciente</button>
+</div>
+</div>
+</form>
+</div>
+</section>
+<!-- TAB 2: FILA DE PRÓTESES -->
+<section id="tab-fila" class="hidden space-y-4">
+<div class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 bg-slate-800/50 p-4 rounded-2xl border border-slate-700">
+<div>
+<h2 class="text-xl font-bold">Fila de Próteses & Exportação</h2>
+<p class="text-sm text-slate-400">Selecione os pacientes para gerar a lista oficial em PDF ou exportar planilha.</p>
+</div>
+<div class="flex flex-wrap items-center gap-2 w-full lg:w-auto">
+<input type="text" id="search-fila" oninput="renderFila()" placeholder="Buscar paciente..." class="bg-slate-900 border border-slate-700 rounded-xl px-4 py-2 text-sm focus:outline-none focus:border-blue-500 flex-1 sm:flex-none sm:w-48">
+<button onclick="toggleSelectAll(true)" class="px-3 py-2 bg-slate-700 hover:bg-slate-600 rounded-xl text-xs font-medium transition">Selecionar Todos</button>
+<!-- Botão Principal: PDF Oficial -->
+<button onclick="exportSelectedPDF()" class="bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2 rounded-xl text-sm font-bold transition flex items-center gap-2 shadow-lg">
+<span>📄</span> Exportar PDF
+</button>
+<!-- Botão Auxiliar: Excel -->
+<button onclick="exportSelectedExcel()" title="Exportar Planilha Excel" class="bg-slate-700 hover:bg-slate-600 text-slate-300 px-3 py-2 rounded-xl text-xs font-medium transition flex items-center gap-1">
+<span>📊</span> Excel
+</button>
+</div>
+</div>
+<!-- Tabela Fila -->
+<div class="bg-slate-800 rounded-2xl border border-slate-700 overflow-hidden shadow-xl">
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="bg-slate-900/80 border-b border-slate-700 text-xs font-semibold uppercase tracking-wider text-slate-400">
+<th class="p-3 w-10 text-center">Sel.</th>
+<th class="p-3 w-12 text-center">Nº</th>
+<th class="p-3 w-16 text-center">Baixa</th>
+<th class="p-4">Nome do Paciente</th>
+<th class="p-4">CPF</th>
+<th class="p-4">SUS (CNS)</th>
+<th class="p-4">Telefone</th>
+<th class="p-4 text-center">Ações</th>
+</tr>
+</thead>
+<tbody id="tbody-fila" class="divide-y divide-slate-700/60 text-sm">
+<!-- Inserido via JavaScript -->
+</tbody>
+</table>
+</div>
+</div>
+</section>
+</main>
+<!-- CONTAINER DO PDF TOTALMENTE OCULTO (NÃO APARECE NA TELA E NÃO BUGA O APP) -->
+<div id="pdf-render-wrapper" style="display: none;">
+<div id="documento-pdf" class="folha-a4">
+<!-- Topo: Cabeçalho Oficial Idêntico ao Modelo Docx -->
+<div class="text-center mb-6">
+<!-- Brasão Oficial Carregado por Link Direto (brasao.png na mesma pasta do GitHub) -->
+<img id="img-brasao-pdf" src="brasao.png" alt="Brasão de Laranjal do Jari" class="h-16 mx-auto mb-3" crossorigin="anonymous">
+<h2 class="text-[12px] font-bold leading-tight uppercase">Estado do Amapá</h2>
+<h2 class="text-[12px] font-bold leading-tight uppercase">Prefeitura de Laranjal do Jari</h2>
+<h2 class="text-[12px] font-bold leading-tight uppercase">Secretaria Municipal de Saúde</h2>
+<h2 class="text-[12px] font-bold leading-tight uppercase">Fundo Municipal de Saúde</h2>
+<h2 class="text-[12px] font-bold leading-tight uppercase">Coordenação de Atenção Básica</h2>
+<h3 class="text-[13px] font-bold underline mt-6 mb-3 uppercase tracking-wide">Lista de Pacientes para Prótese</h3>
+</div>
+<!-- Tabela Oficial de Pacientes (4 Colunas Travadas) -->
+<table class="tabela-pdf">
+<thead>
+<tr>
+<th style="width: 42%;" class="text-left">NOME</th>
+<th style="width: 19%;" class="text-center">CPF</th>
+<th style="width: 19%;" class="text-center">SUS</th>
+<th style="width: 20%;" class="text-center">CONTATO</th>
+</tr>
+</thead>
+<tbody id="corpo-tabela-pdf">
+<!-- Linhas geradas dinamicamente com os pacientes selecionados -->
+</tbody>
+</table>
+</div>
+</div>
+<!-- Modal Customizado Estilo iOS -->
+<div id="custom-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm hidden items-center justify-center p-4 z-[100] opacity-0 transition-opacity duration-200">
+<div id="custom-modal-content" class="bg-slate-800 border border-slate-700 rounded-2xl max-w-sm w-full p-6 shadow-2xl transform scale-95 transition-transform duration-200">
+<h3 class="text-lg font-bold text-white text-center mb-2" id="modal-title">Título</h3>
+<p class="text-sm text-slate-300 text-center mb-6" id="modal-message">Mensagem</p>
+<div class="flex justify-center gap-3" id="modal-actions">
+<!-- Botões gerados via JS -->
+</div>
+</div>
+</div>
+<script>
+const firebaseConfig = {
+apiKey: "AIzaSyD7vdvBDk6k48AlRDQpdrhOxG212MovmrM",
+authDomain: "rocha-batista.firebaseapp.com",
+databaseURL: "https://rocha-batista-default-rtdb.firebaseio.com",
+projectId: "rocha-batista",
+storageBucket: "rocha-batista.firebasestorage.app",
+messagingSenderId: "737568409775",
+appId: "1:737568409775:web:41b6eefa0b18199886ac5a"
+};
+if (!firebase.apps.length) {
+firebase.initializeApp(firebaseConfig);
+}
+const auth = firebase.auth();
+const db = firebase.database();
+const DEFAULT_EMAIL = "rochabatista@wilson.com";
+const DEFAULT_PASS = "wrzt01";
+let userId = null;
+let pacientes = [];
+let modalCallback = null;
+// Login Silencioso
+auth.signInWithEmailAndPassword(DEFAULT_EMAIL, DEFAULT_PASS).catch(err => {
+updateSyncStatus('error', 'Erro');
+});
+auth.onAuthStateChanged(user => {
+if (user) {
+userId = user.uid;
+carregarDadosFirebase();
+}
+});
+// Controle do Modal Customizado
+function showModal(title, message, type = 'alert', callback = null) {
+document.getElementById('modal-title').innerText = title;
+document.getElementById('modal-message').innerText = message;
+const actions = document.getElementById('modal-actions');
+modalCallback = callback;
+if (type === 'confirm') {
+actions.innerHTML = <button onclick="closeModal(false)" class="flex-1 px-4 py-3 rounded-xl text-sm font-semibold bg-slate-700 hover:bg-slate-600 transition text-white">Cancelar</button> <button onclick="closeModal(true)" class="flex-1 px-4 py-3 rounded-xl text-sm font-bold bg-rose-600 hover:bg-rose-500 transition text-white shadow-lg">Excluir</button>;
+} else {
+actions.innerHTML = <button onclick="closeModal(true)" class="w-full px-4 py-3 rounded-xl text-sm font-bold bg-blue-600 hover:bg-blue-500 transition text-white shadow-lg">OK</button>;
+}
+const modal = document.getElementById('custom-modal');
+const content = document.getElementById('custom-modal-content');
+modal.classList.remove('hidden');
+modal.classList.add('flex');
+setTimeout(() => {
+modal.classList.remove('opacity-0');
+content.classList.remove('scale-95');
+}, 10);
+}
+function closeModal(result) {
+const modal = document.getElementById('custom-modal');
+const content = document.getElementById('custom-modal-content');
+modal.classList.add('opacity-0');
+content.classList.add('scale-95');
+setTimeout(() => {
+modal.classList.add('hidden');
+modal.classList.remove('flex');
+if (modalCallback) modalCallback(result);
+}, 200);
+}
+function formatCPFString(v) {
+if (!v) return "";
+v = v.replace(/\D/g, "");
+if (v.length > 11) v = v.slice(0, 11);
+if (v.length > 9) return v.replace(/^(\d{3})(\d{3})(\d{3})(\d{2}).$/, "$1.$2.$3-$4");
+if (v.length > 6) return v.replace(/^(\d{3})(\d{3})(\d{0,3}).$/, "$1.$2.3");
+if (v.length > 3) return v.replace(/^(\d{3})(\d{0,3}).*/, "$1.$2");
+return v;
+}
+function formatPhoneString(v) {
+if (!v) return "";
+v = v.replace(/\D/g, "");
+if (v.length > 11) v = v.slice(0, 11);
+if (v.length > 6) return v.replace(/^(\d{2})(\d{4,5})(\d{4}).$/, "$1 $2-$3");
+if (v.length > 2) return v.replace(/^(\d{2})(\d{0,5}).$/, "$1 $2");
+return v;
+}
+function formatSUSString(v) {
+if (!v) return "";
+v = v.replace(/\D/g, "");
+if (v.length > 15) v = v.slice(0, 15);
+if (v.length > 11) return v.replace(/^(\d{3})(\d{4})(\d{4})(\d{1,4})./, "$1 $2 $3 $4");
+if (v.length > 7) return v.replace(/^(\d{3})(\d{4})(\d{1,4})./, "$1 $2 $3");
+if (v.length > 3) return v.replace(/^(\d{3})(\d{1,4}).*/, "$1 $2");
+return v;
+}
+function maskCPF(input) { input.value = formatCPFString(input.value); }
+function maskPhone(input) { input.value = formatPhoneString(input.value); }
+function maskSUS(input) { input.value = formatSUSString(input.value); }
+function carregarDadosFirebase() {
+updateSyncStatus('syncing', 'Sincronizando');
+db.ref(usuarios/${userId}/proteses/fila).on('value', snapshot => {
+pacientes = snapshot.val() || [];
+updateCounters();
+renderFila();
+updateSyncStatus('synced', 'Ativo');
+}, error => {
+updateSyncStatus('error', 'Erro');
+});
+}
+function salvarNoFirebase() {
+if (!userId) return;
+updateSyncStatus('syncing', 'Sincronizando');
+db.ref(usuarios/${userId}/proteses/fila).set(pacientes)
+.then(() => {
+updateSyncStatus('synced', 'Ativo');
+})
+.catch(() => {
+updateSyncStatus('error', 'Erro');
+});
+}
+function updateCounters() {
+document.getElementById('count-fila').innerText = pacientes.filter(p => !p.checked).length;
+}
+function updateSyncStatus(status, text) {
+const dot = document.getElementById('sync-status');
+const txt = document.getElementById('sync-text');
+txt.innerText = text;
+dot.classList.remove('bg-emerald-500', 'bg-amber-500', 'bg-rose-500', 'bg-slate-500', 'animate-pulse');
+if (status === 'synced') {
+dot.classList.add('bg-emerald-500');
+} else if (status === 'syncing') {
+dot.classList.add('bg-amber-500', 'animate-pulse');
+} else if (status === 'error') {
+dot.classList.add('bg-rose-500');
+} else {
+dot.classList.add('bg-slate-500');
+}
+}
+function switchTab(tab) {
+const btnCadastro = document.getElementById('btn-cadastro');
+const btnFila = document.getElementById('btn-fila');
+const tabCadastro = document.getElementById('tab-cadastro');
+const tabFila = document.getElementById('tab-fila');
+if (tab === 'cadastro') {
+btnCadastro.className = "px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold transition bg-blue-600 text-white shadow";
+btnFila.className = "px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold transition text-slate-400 hover:text-white";
+tabCadastro.classList.remove('hidden');
+tabFila.classList.add('hidden');
+} else {
+btnFila.className = "px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold transition bg-blue-600 text-white shadow";
+btnCadastro.className = "px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold transition text-slate-400 hover:text-white";
+tabFila.classList.remove('hidden');
+tabCadastro.classList.add('hidden');
+renderFila();
+}
+}
+function renderFila() {
+const tbody = document.getElementById('tbody-fila');
+const query = document.getElementById('search-fila').value.toLowerCase();
+tbody.innerHTML = '';
+const sorted = [...pacientes].sort((a, b) => (a.checked === b.checked) ? 0 : a.checked ? 1 : -1);
+const filtered = sorted.filter(p => p.nome.toLowerCase().includes(query) || (p.cpf && p.cpf.toLowerCase().includes(query)));
+if (filtered.length === 0) {
+tbody.innerHTML = <tr><td colspan="8" class="p-6 text-center text-slate-500">Nenhum paciente encontrado.</td></tr>;
+return;
+}
+filtered.forEach((p) => {
+const originalIndex = pacientes.findIndex(item => item.id === p.id) + 1;
+const tr = document.createElement('tr');
+tr.className = border-b border-slate-700/60 transition ${p.checked ? 'bg-slate-900/40 text-slate-500 line-through' : 'hover:bg-slate-700/30'};
+tr.innerHTML = <td class="p-3 text-center"> <input type="checkbox" ${p.selected ? 'checked' : ''} onchange="toggleSelect(${p.id})" class="w-4 h-4 accent-emerald-600 rounded cursor-pointer"> </td> <td class="p-3 text-center text-xs font-bold text-slate-400">${originalIndex}º</td> <td class="p-3 text-center"> <input type="checkbox" ${p.checked ? 'checked' : ''} onchange="toggleCheck(${p.id})" class="w-5 h-5 accent-blue-600 rounded cursor-pointer"> </td> <td class="p-4 font-medium ${p.checked ? 'text-slate-400' : 'text-slate-100'}">${p.nome}</td> <td class="p-4 whitespace-nowrap">${p.cpf || '-'}</td> <td class="p-4 whitespace-nowrap">${p.sus || '-'}</td> <td class="p-4 whitespace-nowrap">${p.telefone || '-'}</td> <td class="p-4 text-center"> <button onclick="editPaciente(${p.id})" class="px-3 py-1.5 bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 border border-blue-500/30 rounded-lg text-xs font-semibold transition">✏️ Editar</button> </td>;
+tbody.appendChild(tr);
+});
+}
+function toggleCheck(id) {
+const p = pacientes.find(item => item.id === id);
+if (p) {
+p.checked = !p.checked;
+salvarNoFirebase();
+}
+}
+function toggleSelect(id) {
+const p = pacientes.find(item => item.id === id);
+if (p) {
+p.selected = !p.selected;
+salvarNoFirebase();
+}
+}
+function toggleSelectAll(select) {
+const newState = select ? true : false;
+pacientes.forEach(p => p.selected = newState);
+salvarNoFirebase();
+renderFila();
+}
+function handleFormSubmit(event) {
+event.preventDefault();
+const editId = document.getElementById('edit-id').value;
+const nome = document.getElementById('input-nome').value.trim();
+if (!nome) return;
+if (editId) {
+const p = pacientes.find(item => item.id == editId);
+if (p) {
+p.nome = nome;
+p.cpf = document.getElementById('input-cpf').value.trim();
+p.sus = document.getElementById('input-sus').value.trim();
+p.telefone = document.getElementById('input-tel').value.trim();
+p.obs = document.getElementById('input-obs').value.trim();
+}
+showModal('Sucesso!', 'Paciente atualizado com sucesso.', 'alert', () => {
+salvarNoFirebase();
+resetForm();
+switchTab('fila');
+});
+} else {
+const novo = {
+id: Date.now(),
+nome: nome,
+cpf: document.getElementById('input-cpf').value.trim(),
+sus: document.getElementById('input-sus').value.trim(),
+telefone: document.getElementById('input-tel').value.trim(),
+obs: document.getElementById('input-obs').value.trim(),
+checked: false,
+selected: false
+};
+pacientes.push(novo);
+showModal('Sucesso!', 'Paciente cadastrado com sucesso na fila.', 'alert', () => {
+salvarNoFirebase();
+resetForm();
+switchTab('fila');
+});
+}
+}
+function editPaciente(id) {
+const p = pacientes.find(item => item.id === id);
+if (!p) return;
+document.getElementById('edit-id').value = p.id;
+document.getElementById('input-nome').value = p.nome;
+document.getElementById('input-cpf').value = p.cpf || '';
+document.getElementById('input-sus').value = p.sus || '';
+document.getElementById('input-tel').value = p.telefone || '';
+document.getElementById('input-obs').value = p.obs || '';
+const currentIndex = pacientes.findIndex(item => item.id === id) + 1;
+document.getElementById('input-posicao').value = currentIndex;
+document.getElementById('input-posicao').max = pacientes.length;
+document.getElementById('form-title').innerText = "Editar Paciente";
+document.getElementById('btn-submit-form').innerText = "Atualizar Paciente";
+document.getElementById('btn-cancel-edit').classList.remove('hidden');
+document.getElementById('reorder-group').classList.remove('hidden');
+document.getElementById('btn-delete-edit').classList.remove('hidden');
+switchTab('cadastro');
+}
+function alterarPosicaoDireta() {
+const editId = document.getElementById('edit-id').value;
+if (!editId) return;
+const novaPosicaoInput = parseInt(document.getElementById('input-posicao').value);
+if (isNaN(novaPosicaoInput) || novaPosicaoInput < 1 || novaPosicaoInput > pacientes.length) {
+showModal('Posição Inválida', Por favor, insira um número entre 1 e ${pacientes.length}., 'alert');
+return;
+}
+const currentIndex = pacientes.findIndex(item => item.id == editId);
+if (currentIndex === -1) return;
+const targetIndex = novaPosicaoInput - 1;
+const [itemMovido] = pacientes.splice(currentIndex, 1);
+pacientes.splice(targetIndex, 0, itemMovido);
+salvarNoFirebase();
+showModal('Reordenado', Paciente movido para a posição ${novaPosicaoInput} com sucesso!, 'alert', () => {
+switchTab('fila');
+});
+}
+function excluirPacienteEditando() {
+const editId = document.getElementById('edit-id').value;
+if (!editId) return;
+showModal('Excluir Paciente', 'Tem certeza que deseja excluir este paciente da fila? Esta ação não pode ser desfeita.', 'confirm', (confirmado) => {
+if (confirmado) {
+pacientes = pacientes.filter(item => item.id != editId);
+salvarNoFirebase();
+resetForm();
+switchTab('fila');
+showModal('Excluído', 'Paciente removido com sucesso.', 'alert');
+}
+});
+}
+function resetForm() {
+document.getElementById('form-cadastro').reset();
+document.getElementById('edit-id').value = '';
+document.getElementById('form-title').innerText = "Cadastrar Novo Paciente";
+document.getElementById('btn-submit-form').innerText = "Salvar Paciente";
+document.getElementById('btn-cancel-edit').classList.add('hidden');
+document.getElementById('reorder-group').classList.add('hidden');
+document.getElementById('btn-delete-edit').classList.add('hidden');
+}
+function baixarArquivoFallback(blob, nomeArquivo) {
+const url = URL.createObjectURL(blob);
+const a = document.createElement('a');
+a.href = url;
+a.download = nomeArquivo;
+document.body.appendChild(a);
+a.click();
+document.body.removeChild(a);
+setTimeout(() => URL.revokeObjectURL(url), 2000);
+}
+// ============================================================================
+// NOVO GERADOR OFICIAL DE LISTA EM PDF (1 PÁGINA A4 COM BRASÃO POR LINK)
+// ============================================================================
+async function exportSelectedPDF() {
+const selecionados = pacientes.filter(p => p.selected);
+if (selecionados.length === 0) {
+showModal('Nenhum selecionado', "Selecione ao menos um paciente na coluna 'Sel.' para gerar a lista.", 'alert');
+return;
+}
+// 1. Popula a tabela com os pacientes selecionados
+const tbody = document.getElementById('corpo-tabela-pdf');
+let html = '';
+selecionados.forEach(p => {
+html += <tr> <td class="font-semibold uppercase">${p.nome || '-'}</td> <td class="text-center font-medium">${p.cpf || '-'}</td> <td class="text-center font-medium">${p.sus || '-'}</td> <td class="text-center font-medium">${p.telefone || '-'}</td> </tr>;
+});
+tbody.innerHTML = html;
+// 2. Define o nome do arquivo padrão com a data de hoje
+const hoje = new Date();
+const dia = String(hoje.getDate()).padStart(2, '0');
+const mes = String(hoje.getMonth() + 1).padStart(2, '0');
+const ano = hoje.getFullYear();
+const dataStr = ${dia}-${mes}-${ano};
+const nomeArquivo = Lista de Pacientes para Prótese - Dr. Wilson (${dataStr}).pdf;
+// 3. Exibe temporariamente a folha para renderização sem interferir no app
+const wrapper = document.getElementById('pdf-render-wrapper');
+const elemento = document.getElementById('documento-pdf');
+wrapper.style.display = 'block';
+wrapper.style.position = 'fixed';
+wrapper.style.top = '0';
+wrapper.style.left = '0';
+wrapper.style.zIndex = '99999';
+window.scrollTo(0, 0);
+const opt = {
+margin:       0,
+filename:     nomeArquivo,
+image:        { type: 'jpeg', quality: 0.98 },
+html2canvas:  {
+scale: 2,
+useCORS: true
+},
+jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+};
+try {
+const pdf = await html2pdf().set(opt).from(elemento).toPdf().get('pdf');
+// Mantém estritamente em 1 página
+var totalPages = pdf.internal.getNumberOfPages();
+while (totalPages > 1) {
+pdf.deletePage(totalPages);
+totalPages--;
+}
+const blob = pdf.output('blob');
+const file = new File([blob], nomeArquivo, { type: 'application/pdf' });
+// Compartilhamento nativo limpo do iOS (sem links de texto)
+if (navigator.canShare && navigator.canShare({ files: [file] })) {
+try {
+await navigator.share({
+files: [file]
+});
+} catch (err) {
+if (err.name !== 'AbortError') {
+baixarArquivoFallback(blob, nomeArquivo);
+}
+}
+} else {
+baixarArquivoFallback(blob, nomeArquivo);
+}
+} catch (err) {
+console.error(err);
+showModal('Erro ao Exportar', 'Ocorreu um erro ao gerar o PDF. Tente novamente.', 'alert');
+} finally {
+// Oculta novamente o wrapper do PDF para manter a tela 100% limpa
+wrapper.style.display = 'none';
+}
+}
+// ============================================================================
+// EXPORTADOR SECUNDÁRIO EM EXCEL (.XLSX)
+// ============================================================================
+async function exportSelectedExcel() {
+const selecionados = pacientes.filter(p => p.selected);
+if (selecionados.length === 0) {
+showModal('Nenhum selecionado', "Selecione ao menos um paciente na coluna 'Sel.' para exportar.", 'alert');
+return;
+}
+const dadosPlanilha = selecionados.map(p => ({
+"Status": p.checked ? "CONCLUIDO" : "PENDENTE",
+"Nome": p.nome || "",
+"CPF": p.cpf || "",
+"SUS (CNS)": p.sus || "",
+"Telefone": p.telefone || "",
+"Observacoes": p.obs || ""
+}));
+const planilha = XLSX.utils.json_to_sheet(dadosPlanilha);
+const pastaDeTrabalho = XLSX.utils.book_new();
+XLSX.utils.book_append_sheet(pastaDeTrabalho, planilha, "Proteses");
+const excelBuffer = XLSX.write(pastaDeTrabalho, { bookType: 'xlsx', type: 'array' });
+const blob = new Blob([excelBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+const nomeArquivo = pacientes_protese_${new Date().toISOString().split('T')[0]}.xlsx;
+try {
+const arquivo = new File([blob], nomeArquivo, { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+if (navigator.canShare && navigator.canShare({ files: [arquivo] })) {
+await navigator.share({
+files: [arquivo]
+});
+return;
+}
+} catch (err) {
+if (err.name === 'AbortError') return;
+}
+baixarArquivoFallback(blob, nomeArquivo);
+}
+</script>
 </body>
 </html>
