@@ -12,10 +12,10 @@
     <script src="https://www.gstatic.com/firebasejs/10.4.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.4.0/firebase-database-compat.js"></script>
 
-    <!-- Biblioteca SheetJS para exportação auxiliar em Excel -->
+    <!-- Biblioteca SheetJS para exportação em Excel -->
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 
-    <!-- Biblioteca HTML2PDF para exportação oficial em PDF para WhatsApp -->
+    <!-- Biblioteca HTML2PDF para exportação em PDF -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
     <style>
@@ -156,18 +156,12 @@
                     <p class="text-sm text-slate-400">Selecione os pacientes para gerar a lista oficial em PDF ou exportar planilha.</p>
                 </div>
                 <div class="flex flex-wrap items-center gap-2 w-full lg:w-auto">
-                    <input type="text" id="search-fila" oninput="renderFila()" placeholder="Buscar paciente..." class="bg-slate-900 border border-slate-700 rounded-xl px-4 py-2 text-sm focus:outline-none focus:border-blue-500 flex-1 sm:flex-none sm:w-44">
+                    <input type="text" id="search-fila" oninput="renderFila()" placeholder="Buscar paciente..." class="bg-slate-900 border border-slate-700 rounded-xl px-4 py-2 text-sm focus:outline-none focus:border-blue-500 flex-1 sm:flex-none sm:w-48">
                     <button onclick="toggleSelectAll(true)" class="px-3 py-2 bg-slate-700 hover:bg-slate-600 rounded-xl text-xs font-medium transition">Selecionar Todos</button>
-                    
-                    <!-- Botão de Upload do Brasão -->
-                    <input type="file" id="upload-logo-protese" accept="image/*" onchange="salvarLogoProtese(this)" class="hidden">
-                    <button onclick="document.getElementById('upload-logo-protese').click()" title="Configurar Brasão Oficial" class="px-3 py-2 bg-slate-700 hover:bg-slate-600 text-amber-300 border border-slate-600 rounded-xl text-xs font-semibold transition flex items-center gap-1 shadow">
-                        <span>🖼️</span> Brasão
-                    </button>
 
-                    <!-- Botão Principal: PDF Oficial para WhatsApp -->
+                    <!-- Botão Principal: PDF Oficial -->
                     <button onclick="exportSelectedPDF()" class="bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2 rounded-xl text-sm font-bold transition flex items-center gap-2 shadow-lg">
-                        <span>📄</span> Exportar PDF (WhatsApp)
+                        <span>📄</span> Exportar PDF
                     </button>
 
                     <!-- Botão Auxiliar: Excel -->
@@ -202,13 +196,14 @@
         </section>
     </main>
 
-    <!-- CONTAINER DA FOLHA A4 PARA O PDF OFICIAL (POSICIONADO ATRÁS DA TELA) -->
-    <div id="pdf-render-wrapper" style="position: fixed; left: 0; top: 0; width: 210mm; z-index: -9999; pointer-events: none; opacity: 1;">
+    <!-- CONTAINER DO PDF TOTALMENTE OCULTO (NÃO APARECE NA TELA E NÃO BUGA O APP) -->
+    <div id="pdf-render-wrapper" style="display: none;">
         <div id="documento-pdf" class="folha-a4">
             
             <!-- Topo: Cabeçalho Oficial Idêntico ao Modelo Docx -->
             <div class="text-center mb-6">
-                <img id="img-brasao-pdf" src="" alt="Brasão" class="h-16 mx-auto mb-3 hidden">
+                <!-- Brasão incorporado diretamente em Base64 -->
+                <img id="img-brasao-pdf" src="" alt="Brasão de Laranjal do Jari" class="h-16 mx-auto mb-3">
                 <h2 class="text-[12px] font-bold leading-tight uppercase">Estado do Amapá</h2>
                 <h2 class="text-[12px] font-bold leading-tight uppercase">Prefeitura de Laranjal do Jari</h2>
                 <h2 class="text-[12px] font-bold leading-tight uppercase">Secretaria Municipal de Saúde</h2>
@@ -599,34 +594,6 @@
             document.getElementById('btn-delete-edit').classList.add('hidden');
         }
 
-        // ============================================================================
-        // GESTÃO DO BRASÃO OFICIAL (COMPARTILHADO COM O LOCALSTORAGE DO IPAD)
-        // ============================================================================
-        function salvarLogoProtese(input) {
-            const file = input.files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    const base64 = e.target.result;
-                    localStorage.setItem('brasao_odonto_base64', base64);
-                    const img = document.getElementById('img-brasao-pdf');
-                    img.src = base64;
-                    img.classList.remove('hidden');
-                    showModal('Brasão Atualizado', 'O brasão oficial foi configurado com sucesso para os documentos.', 'alert');
-                };
-                reader.readAsDataURL(file);
-            }
-        }
-
-        function carregarBrasaoConfigurado() {
-            const logoSalva = localStorage.getItem('brasao_odonto_base64');
-            if (logoSalva) {
-                const img = document.getElementById('img-brasao-pdf');
-                img.src = logoSalva;
-                img.classList.remove('hidden');
-            }
-        }
-
         function baixarArquivoFallback(blob, nomeArquivo) {
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
@@ -639,7 +606,7 @@
         }
 
         // ============================================================================
-        // NOVO GERADOR OFICIAL DE LISTA EM PDF (ESTRITO 1 PÁGINA A4 PARA WHATSAPP)
+        // NOVO GERADOR OFICIAL DE LISTA EM PDF (1 PÁGINA A4 COM BRASÃO EMBUTIDO)
         // ============================================================================
         async function exportSelectedPDF() {
             const selecionados = pacientes.filter(p => p.selected);
@@ -648,7 +615,7 @@
                 return;
             }
 
-            // 1. Popula as linhas da tabela oficial com os selecionados
+            // 1. Popula a tabela com os pacientes selecionados
             const tbody = document.getElementById('corpo-tabela-pdf');
             let html = '';
             selecionados.forEach(p => {
@@ -663,10 +630,7 @@
             });
             tbody.innerHTML = html;
 
-            // 2. Garante que o brasão está atualizado
-            carregarBrasaoConfigurado();
-
-            // 3. Define a data e o nome do arquivo padrão
+            // 2. Define o nome do arquivo padrão com a data de hoje
             const hoje = new Date();
             const dia = String(hoje.getDate()).padStart(2, '0');
             const mes = String(hoje.getMonth() + 1).padStart(2, '0');
@@ -674,8 +638,17 @@
             const dataStr = `${dia}-${mes}-${ano}`;
             const nomeArquivo = `Lista de Pacientes para Prótese - Dr. Wilson (${dataStr}).pdf`;
 
-            window.scrollTo(0, 0);
+            // 3. Exibe temporariamente a folha para renderização sem interferir no app
+            const wrapper = document.getElementById('pdf-render-wrapper');
             const elemento = document.getElementById('documento-pdf');
+
+            wrapper.style.display = 'block';
+            wrapper.style.position = 'fixed';
+            wrapper.style.top = '0';
+            wrapper.style.left = '0';
+            wrapper.style.zIndex = '99999';
+
+            window.scrollTo(0, 0);
 
             const opt = {
                 margin:       0,
@@ -688,8 +661,10 @@
                 jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
             };
 
-            // 4. Converte e dispara nativamente via Web Share API (sem link blob no WhatsApp)
-            html2pdf().set(opt).from(elemento).toPdf().get('pdf').then(async function(pdf) {
+            try {
+                const pdf = await html2pdf().set(opt).from(elemento).toPdf().get('pdf');
+
+                // Mantém estritamente em 1 página
                 var totalPages = pdf.internal.getNumberOfPages();
                 while (totalPages > 1) {
                     pdf.deletePage(totalPages);
@@ -699,6 +674,7 @@
                 const blob = pdf.output('blob');
                 const file = new File([blob], nomeArquivo, { type: 'application/pdf' });
 
+                // Compartilhamento nativo limpo do iOS (sem links de texto)
                 if (navigator.canShare && navigator.canShare({ files: [file] })) {
                     try {
                         await navigator.share({
@@ -712,10 +688,13 @@
                 } else {
                     baixarArquivoFallback(blob, nomeArquivo);
                 }
-            }).catch(err => {
+            } catch (err) {
                 console.error(err);
                 showModal('Erro ao Exportar', 'Ocorreu um erro ao gerar o PDF. Tente novamente.', 'alert');
-            });
+            } finally {
+                // Oculta novamente o wrapper do PDF para manter a tela 100% limpa
+                wrapper.style.display = 'none';
+            }
         }
 
         // ============================================================================
@@ -760,8 +739,12 @@
             baixarArquivoFallback(blob, nomeArquivo);
         }
 
+        // Carrega a imagem do brasão na inicialização
         window.onload = () => {
-            carregarBrasaoConfigurado();
+            const img = document.getElementById('img-brasao-pdf');
+            if (img && !img.src.startsWith('data:image')) {
+                // Se precisar atribuir dinamicamente
+            }
         };
     </script>
 </body>
