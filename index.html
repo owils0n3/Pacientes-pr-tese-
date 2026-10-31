@@ -12,6 +12,9 @@
     <script src="https://www.gstatic.com/firebasejs/10.4.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.4.0/firebase-database-compat.js"></script>
 
+    <!-- Biblioteca SheetJS para gerar a Planilha Real (.xlsx) -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
     <style>
         body { font-family: 'Inter', sans-serif; }
         @media screen and (max-width: 768px) {
@@ -114,13 +117,13 @@
             <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-slate-800/50 p-4 rounded-2xl border border-slate-700">
                 <div>
                     <h2 class="text-xl font-bold">Fila de Próteses & Exportação</h2>
-                    <p class="text-sm text-slate-400">Selecione os pacientes e exporte o CSV.</p>
+                    <p class="text-sm text-slate-400">Selecione os pacientes e exporte para o Google Planilhas.</p>
                 </div>
                 <div class="flex flex-wrap items-center gap-2 w-full sm:w-auto">
                     <input type="text" id="search-fila" oninput="renderFila()" placeholder="Buscar paciente..." class="bg-slate-900 border border-slate-700 rounded-xl px-4 py-2 text-sm focus:outline-none focus:border-blue-500 w-full sm:w-48">
                     <button onclick="toggleSelectAll(true)" class="px-3 py-2 bg-slate-700 hover:bg-slate-600 rounded-xl text-xs font-medium transition">Selecionar Todos</button>
-                    <button onclick="exportSelectedCSV()" class="bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2 rounded-xl text-sm font-medium transition flex items-center gap-2 shadow">
-                        📥 Exportar CSV
+                    <button onclick="exportSelectedExcel()" class="bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2 rounded-xl text-sm font-medium transition flex items-center gap-2 shadow">
+                        📥 Gerar Planilha Excel
                     </button>
                 </div>
             </div>
@@ -220,7 +223,6 @@
             modal.classList.remove('hidden');
             modal.classList.add('flex');
             
-            // Timeout curto para permitir a animação do Tailwind
             setTimeout(() => {
                 modal.classList.remove('opacity-0');
                 content.classList.remove('scale-95');
@@ -514,35 +516,61 @@
             document.getElementById('btn-delete-edit').classList.add('hidden');
         }
 
-        function exportSelectedCSV() {
+        // ============================================================================
+        // NOVO GERADOR DE PLANILHA EXCEL (.XLSX) NATIVO (SEM ARQUIVO .TXT FANTASMA)
+        // ============================================================================
+        async function exportSelectedExcel() {
             const selecionados = pacientes.filter(p => p.selected);
             if (selecionados.length === 0) {
                 showModal('Nenhum selecionado', "Selecione ao menos um paciente na coluna 'Sel.' para exportar.", 'alert');
                 return;
             }
 
-            let csvContent = "\uFEFFStatus,Nome,CPF,SUS,Telefone,Observacoes\n";
-            selecionados.forEach(p => {
-                let row = [
-                    p.checked ? "CONCLUIDO" : "PENDENTE",
-                    `"${(p.nome || '').replace(/"/g, '""')}"`,
-                    `"${(p.cpf || '').replace(/"/g, '""')}"`,
-                    `"${(p.sus || '').replace(/"/g, '""')}"`,
-                    `"${(p.telefone || '').replace(/"/g, '""')}"`,
-                    `"${(p.obs || '').replace(/"/g, '""')}"`
-                ];
-                csvContent += row.join(",") + "\n";
-            });
+            // 1. Organiza os dados para o SheetJS
+            const dadosPlanilha = selecionados.map(p => ({
+                "Status": p.checked ? "CONCLUIDO" : "PENDENTE",
+                "Nome": p.nome || "",
+                "CPF": p.cpf || "",
+                "SUS (CNS)": p.sus || "",
+                "Telefone": p.telefone || "",
+                "Observacoes": p.obs || ""
+            }));
 
-            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            // 2. Constrói o arquivo Excel (.xlsx)
+            const planilha = XLSX.utils.json_to_sheet(dadosPlanilha);
+            const pastaDeTrabalho = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(pastaDeTrabalho, planilha, "Proteses");
+
+            // 3. Converte para o buffer do arquivo real .xlsx
+            const excelBuffer = XLSX.write(pastaDeTrabalho, { bookType: 'xlsx', type: 'array' });
+            const blob = new Blob([excelBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+            const nomeArquivo = `pacientes_protese_${new Date().toISOString().split('T')[0]}.xlsx`;
+
+            // 4. Compartilhamento nativo do iOS (Web Share API) limpo (sem texto extra gerador de .txt)
+            try {
+                const arquivo = new File([blob], nomeArquivo, { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+                if (navigator.canShare && navigator.canShare({ files: [arquivo] })) {
+                    await navigator.share({
+                        files: [arquivo]
+                    });
+                    return;
+                }
+            } catch (err) {
+                if (err.name === 'AbortError') return; // Usuário cancelou
+            }
+
+            // 5. Fallback clássico caso o navegador não abra a folha de compartilhamento
             const url = URL.createObjectURL(blob);
             const link = document.createElement("a");
             link.setAttribute("href", url);
-            link.setAttribute("download", "pacientes_selecionados_protese.csv");
+            link.setAttribute("download", nomeArquivo);
+            link.style.display = 'none';
             document.body.appendChild(link);
             link.click();
-            document.body.removeChild(link);
-            URL.revokeObjectURL(url);
+            setTimeout(() => {
+                document.body.removeChild(link);
+                URL.revokeObjectURL(url);
+            }, 1500);
         }
     </script>
 </body>
