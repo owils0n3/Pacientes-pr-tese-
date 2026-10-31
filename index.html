@@ -196,14 +196,14 @@
         </section>
     </main>
 
-    <!-- CONTAINER DO PDF TOTALMENTE OCULTO (NÃO APARECE NA TELA E NÃO BUGA O APP) -->
+    <!-- CONTAINER DO PDF TOTALMENTE OCULTO (NÃO APARECE NA TELA E NÃO INTERFERE NO APP) -->
     <div id="pdf-render-wrapper" style="display: none;">
         <div id="documento-pdf" class="folha-a4">
             
             <!-- Topo: Cabeçalho Oficial Idêntico ao Modelo Docx -->
             <div class="text-center mb-6">
-                <!-- Brasão incorporado diretamente em Base64 -->
-                <img id="img-brasao-pdf" src="" alt="Brasão de Laranjal do Jari" class="h-16 mx-auto mb-3">
+                <!-- Brasão incorporado automaticamente via Base64 -->
+                <img id="img-brasao-pdf" src="" alt="Brasão de Laranjal do Jari" class="h-16 mx-auto mb-3 hidden">
                 <h2 class="text-[12px] font-bold leading-tight uppercase">Estado do Amapá</h2>
                 <h2 class="text-[12px] font-bold leading-tight uppercase">Prefeitura de Laranjal do Jari</h2>
                 <h2 class="text-[12px] font-bold leading-tight uppercase">Secretaria Municipal de Saúde</h2>
@@ -277,6 +277,16 @@
                 carregarDadosFirebase();
             }
         });
+
+        // Carrega o brasão compartilhado da memória do iPad
+        function carregarBrasaoAutomatico() {
+            const logo = localStorage.getItem('brasao_odonto_base64');
+            const img = document.getElementById('img-brasao-pdf');
+            if (logo && img) {
+                img.src = logo;
+                img.classList.remove('hidden');
+            }
+        }
 
         // Controle do Modal Customizado
         function showModal(title, message, type = 'alert', callback = null) {
@@ -606,7 +616,7 @@
         }
 
         // ============================================================================
-        // NOVO GERADOR OFICIAL DE LISTA EM PDF (1 PÁGINA A4 COM BRASÃO EMBUTIDO)
+        // NOVO GERADOR OFICIAL DE LISTA EM PDF (1 PÁGINA A4 COM BRASÃO AUTOMÁTICO)
         // ============================================================================
         async function exportSelectedPDF() {
             const selecionados = pacientes.filter(p => p.selected);
@@ -630,7 +640,10 @@
             });
             tbody.innerHTML = html;
 
-            // 2. Define o nome do arquivo padrão com a data de hoje
+            // 2. Garante que o brasão está carregado
+            carregarBrasaoAutomatico();
+
+            // 3. Define o nome do arquivo com a data de hoje
             const hoje = new Date();
             const dia = String(hoje.getDate()).padStart(2, '0');
             const mes = String(hoje.getMonth() + 1).padStart(2, '0');
@@ -638,7 +651,7 @@
             const dataStr = `${dia}-${mes}-${ano}`;
             const nomeArquivo = `Lista de Pacientes para Prótese - Dr. Wilson (${dataStr}).pdf`;
 
-            // 3. Exibe temporariamente a folha para renderização sem interferir no app
+            // 4. Ativa a captura do PDF
             const wrapper = document.getElementById('pdf-render-wrapper');
             const elemento = document.getElementById('documento-pdf');
 
@@ -664,7 +677,7 @@
             try {
                 const pdf = await html2pdf().set(opt).from(elemento).toPdf().get('pdf');
 
-                // Mantém estritamente em 1 página
+                // Garante que o arquivo fica restrito a 1 página
                 var totalPages = pdf.internal.getNumberOfPages();
                 while (totalPages > 1) {
                     pdf.deletePage(totalPages);
@@ -674,7 +687,10 @@
                 const blob = pdf.output('blob');
                 const file = new File([blob], nomeArquivo, { type: 'application/pdf' });
 
-                // Compartilhamento nativo limpo do iOS (sem links de texto)
+                // OCULTA IMEDIATAMENTE A FOLHA ANTES DE ABRIR A JANELA DO IOS:
+                wrapper.style.display = 'none';
+
+                // Dispara o compartilhamento nativo com a tela limpa
                 if (navigator.canShare && navigator.canShare({ files: [file] })) {
                     try {
                         await navigator.share({
@@ -690,10 +706,8 @@
                 }
             } catch (err) {
                 console.error(err);
-                showModal('Erro ao Exportar', 'Ocorreu um erro ao gerar o PDF. Tente novamente.', 'alert');
-            } finally {
-                // Oculta novamente o wrapper do PDF para manter a tela 100% limpa
                 wrapper.style.display = 'none';
+                showModal('Erro ao Exportar', 'Ocorreu um erro ao gerar o PDF. Tente novamente.', 'alert');
             }
         }
 
@@ -739,12 +753,9 @@
             baixarArquivoFallback(blob, nomeArquivo);
         }
 
-        // Carrega a imagem do brasão na inicialização
+        // Carrega o brasão compartilhado ao abrir o app
         window.onload = () => {
-            const img = document.getElementById('img-brasao-pdf');
-            if (img && !img.src.startsWith('data:image')) {
-                // Se precisar atribuir dinamicamente
-            }
+            carregarBrasaoAutomatico();
         };
     </script>
 </body>
